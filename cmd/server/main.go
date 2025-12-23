@@ -2,127 +2,131 @@
 package main
 
 import (
-	"context"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"strings"
 
-	"github.com/gin-gonic/gin"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 
-	"github.com/vincent119/images-filters/internal/config"
-	"github.com/vincent119/images-filters/internal/metrics"
-	"github.com/vincent119/images-filters/internal/service"
+	appfx "github.com/vincent119/images-filters/internal/fx"
 	"github.com/vincent119/images-filters/pkg/logger"
-	"github.com/vincent119/images-filters/routes"
 )
 
 func main() {
-	// 載入設定
-	cfg, err := config.Load("")
-	if err != nil {
-		os.Stderr.WriteString("載入設定失敗: " + err.Error() + "\n")
-		os.Exit(1)
-	}
+	app := fx.New(
+		// Core modules
+		appfx.ConfigModule,
+		appfx.LoggerModule,
+		appfx.MetricsModule,
+		appfx.ServiceModule,
+		appfx.ServerModule,
 
-	// 初始化日誌系統
-	logger.Init(&cfg.Logging)
-	defer logger.Sync()
-
-	logger.Info("",
-		logger.String("msg", "config load success"),
-		logger.String("host", cfg.Server.Host),
-		logger.Int("port", cfg.Server.Port),
-		logger.String("log_level", cfg.Logging.Level),
-		logger.String("storage_type", cfg.Storage.Type),
-		logger.Bool("metrics_enabled", cfg.Metrics.Enabled),
+		// Use zlogger for fx logs
+		fx.WithLogger(func() fxevent.Logger {
+			return &fxZapLogger{}
+		}),
 	)
 
-	// 設定 Gin 模式
-	if cfg.Logging.Level == "debug" {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	app.Run()
+}
 
-	// 建立 Gin 引擎（不使用預設中介層）
-	engine := gin.New()
+// fxZapLogger 將 fx 事件日誌導向 zlogger
+type fxZapLogger struct{}
 
-	// 使用 zlogger 中介層
-	engine.Use(logger.GinMiddleware())
-	engine.Use(logger.GinRecovery())
-
-	// 建立 Metrics（如果啟用）
-	var m metrics.Metrics
-	if cfg.Metrics.Enabled {
-		namespace := cfg.Metrics.Namespace
-		if namespace == "" {
-			namespace = "imgfilter"
-		}
-		m = metrics.NewPrometheusMetrics(namespace)
-		logger.Info("",
-			logger.String("msg", "metrics enabled"),
-			logger.String("namespace", namespace),
-			logger.String("path", cfg.Metrics.Path),
+func (l *fxZapLogger) LogEvent(event fxevent.Event) {
+	switch e := event.(type) {
+	case *fxevent.OnStartExecuting:
+		logger.Debug("fx hook executing",
+			logger.String("callee", e.FunctionName),
+			logger.String("caller", e.CallerName),
 		)
-	}
-
-	// 建立服務（傳入 metrics）
-	var imageService service.ImageService
-	if m != nil {
-		imageService = service.NewImageService(cfg, service.WithMetrics(m))
-	} else {
-		imageService = service.NewImageService(cfg)
-	}
-
-	// 設定路由
-	routes.Setup(engine, imageService, cfg, m)
-
-	// 建立 HTTP 服務器
-	server := &http.Server{
-		Addr:         cfg.GetAddress(),
-		Handler:      engine,
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
-	}
-
-	// 啟動服務器（非阻塞）
-	go func() {
-		logger.Info("",
-			logger.String("msg", "server start success"),
-			logger.String("address", cfg.GetAddress()),
-			logger.String("health_endpoint", "/healthz"),
-			logger.String("metrics_endpoint", cfg.Metrics.Path),
-		)
-
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("",
-				logger.String("msg", "server start failed"),
-				logger.Err(err))
+	case *fxevent.OnStartExecuted:
+		if e.Err != nil {
+			logger.Error("fx hook failed",
+				logger.String("callee", e.FunctionName),
+				logger.String("caller", e.CallerName),
+				logger.Err(e.Err),
+			)
+		} else {
+			logger.Debug("fx hook executed",
+				logger.String("callee", e.FunctionName),
+				logger.String("caller", e.CallerName),
+				logger.String("runtime", e.Runtime.String()),
+			)
 		}
-	}()
-
-	// 等待中斷信號
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-quit
-
-	logger.Info("",
-		logger.String("msg", "server closing"),
-		logger.String("signal", sig.String()),
-	)
-
-	// 優雅關閉
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		logger.Error("",
-			logger.String("msg", "server closing failed"),
-			logger.Err(err))
-		os.Exit(1)
+	case *fxevent.OnStopExecuting:
+		logger.Debug("fx hook stopping",
+			logger.String("callee", e.FunctionName),
+			logger.String("caller", e.CallerName),
+		)
+	case *fxevent.OnStopExecuted:
+		if e.Err != nil {
+			logger.Error("fx hook stop failed",
+				logger.String("callee", e.FunctionName),
+				logger.String("caller", e.CallerName),
+				logger.Err(e.Err),
+			)
+		} else {
+			logger.Debug("fx hook stopped",
+				logger.String("callee", e.FunctionName),
+				logger.String("caller", e.CallerName),
+				logger.String("runtime", e.Runtime.String()),
+			)
+		}
+	case *fxevent.Supplied:
+		if e.Err != nil {
+			logger.Error("fx supply failed",
+				logger.String("type", e.TypeName),
+				logger.Err(e.Err),
+			)
+		}
+	case *fxevent.Provided:
+		if e.Err != nil {
+			logger.Error("fx provide failed",
+				logger.String("constructor", e.ConstructorName),
+				logger.Err(e.Err),
+			)
+		} else {
+			for _, t := range e.OutputTypeNames {
+				logger.Debug("fx provided",
+					logger.String("constructor", e.ConstructorName),
+					logger.String("type", t),
+				)
+			}
+		}
+	case *fxevent.Invoking:
+		logger.Debug("fx invoking",
+			logger.String("function", e.FunctionName),
+		)
+	case *fxevent.Invoked:
+		if e.Err != nil {
+			logger.Error("fx invoke failed",
+				logger.String("function", e.FunctionName),
+				logger.Err(e.Err),
+			)
+		}
+	case *fxevent.Stopping:
+		logger.Info("fx stopping",
+			logger.String("signal", strings.ToUpper(e.Signal.String())),
+		)
+	case *fxevent.Stopped:
+		if e.Err != nil {
+			logger.Error("fx stop failed", logger.Err(e.Err))
+		}
+	case *fxevent.RollingBack:
+		logger.Error("fx rolling back", logger.Err(e.StartErr))
+	case *fxevent.RolledBack:
+		if e.Err != nil {
+			logger.Error("fx rollback failed", logger.Err(e.Err))
+		}
+	case *fxevent.Started:
+		if e.Err != nil {
+			logger.Error("fx start failed", logger.Err(e.Err))
+		} else {
+			logger.Info("fx started")
+		}
+	case *fxevent.LoggerInitialized:
+		if e.Err != nil {
+			logger.Error("fx logger init failed", logger.Err(e.Err))
+		}
 	}
-
-	logger.Info("", logger.String("msg", "server closed"))
 }

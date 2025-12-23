@@ -10,10 +10,8 @@ import (
 	"image/jpeg"
 	"image/png"
 
+	"github.com/chai2010/webp"
 	"github.com/disintegration/imaging"
-
-	// 註冊圖片格式解碼器
-	_ "golang.org/x/image/webp"
 )
 
 // Processor 圖片處理器
@@ -193,12 +191,15 @@ func (p *Processor) Encode(img image.Image, format string, quality int) ([]byte,
 	var err error
 
 	switch format {
+
 	case "jpeg", "jpg":
 		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
 	case "png":
 		err = png.Encode(&buf, img)
 	case "gif":
 		err = gif.Encode(&buf, img, nil)
+	case "webp":
+		err = webp.Encode(&buf, img, &webp.Options{Quality: float32(quality)})
 	default:
 		// 預設使用 JPEG
 		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
