@@ -236,11 +236,12 @@ swagger:
 
 ### 3.2 URL 簽名工具庫
 
-- [ ] 建立 `internal/security/url_signer.go`
-- [ ] 實作 SignURL 方法
-- [ ] 實作 VerifyURL 方法
-- [ ] 建立 CLI 簽名工具
-- [ ] 撰寫使用文件
+- [x] 建立 `internal/security/url_signer.go`
+- [x] 實作 SignURL 方法
+- [x] 實作 VerifyURL 方法
+- [x] 建立 CLI 簽名工具
+- [x] 撰寫使用文件
+
 
 ### 3.3 來源白名單
 

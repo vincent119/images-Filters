@@ -111,6 +111,24 @@ signedURL := signer.SignURL("300x200/filters:blur(5)/test.jpg")
 // 輸出: /{base64-signature}/300x200/filters:blur(5)/test.jpg
 ```
 
+### CLI 簽名工具
+
+```bash
+# 編譯工具
+go build -o bin/signer ./cmd/signer
+
+# 產生簽名 URL
+./bin/signer sign -key "your-secret-key" -path "300x200/test.jpg"
+
+# 驗證簽名
+./bin/signer verify -key "your-secret-key" -url "/{signature}/300x200/test.jpg"
+
+# 使用環境變數
+export IMG_SECURITY_KEY="your-secret-key"
+./bin/signer sign -path "300x200/test.jpg"
+```
+
+
 ## 🛠️ 開發
 
 ```bash
