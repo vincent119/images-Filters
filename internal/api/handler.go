@@ -25,15 +25,15 @@ func NewHandler(imageService service.ImageService) *Handler {
 }
 
 // HandleImage 處理圖片請求
-// @Summary 處理圖片
-// @Description 根據 URL 參數處理圖片（Resize、Crop、Flip、Filters）
+// @Summary Process image
+// @Description Process image based on URL parameters (Resize, Crop, Flip, Filters)
 // @Tags Image
-// @Produce image/jpeg image/png image/webp image/gif
-// @Param path path string true "圖片處理路徑"
-// @Success 200 {file} binary "處理後的圖片"
-// @Failure 400 {object} ErrorResponse "請求格式錯誤"
-// @Failure 404 {object} ErrorResponse "圖片不存在"
-// @Failure 500 {object} ErrorResponse "內部錯誤"
+// @Produce octet-stream
+// @Param path path string true "Image processing path"
+// @Success 200 {file} binary "Processed image"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 404 {object} ErrorResponse "Image not found"
+// @Failure 500 {object} ErrorResponse "Internal error"
 // @Router /{path} [get]
 func (h *Handler) HandleImage(c *gin.Context) {
 	// 取得完整路徑（使用 Request.URL.Path）
@@ -75,15 +75,15 @@ func (h *Handler) HandleImage(c *gin.Context) {
 	c.Data(http.StatusOK, contentType, imageData)
 }
 
-// HealthCheck 健康檢查
-// @Summary 健康檢查
-// @Description 檢查服務是否正常運行
+// HealthCheck health check endpoint
+// @Summary Health check
+// @Description Check if service is running properly
 // @Tags Health
 // @Produce json
 // @Success 200 {object} HealthResponse
 // @Router /healthz [get]
 func (h *Handler) HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, HealthResponse{
+	c.IndentedJSON(http.StatusOK, HealthResponse{
 		Status: "ok",
 	})
 }

@@ -17,7 +17,7 @@ type LocalStorage struct {
 func NewLocalStorage(rootPath string) (*LocalStorage, error) {
 	// 確保根目錄存在
 	if err := os.MkdirAll(rootPath, 0755); err != nil {
-		return nil, fmt.Errorf("建立儲存目錄失敗: %w", err)
+		return nil, fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
 	return &LocalStorage{
@@ -32,9 +32,9 @@ func (s *LocalStorage) Get(ctx context.Context, key string) ([]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("檔案不存在: %s", key)
+			return nil, fmt.Errorf("file not found: %s", key)
 		}
-		return nil, fmt.Errorf("讀取檔案失敗: %w", err)
+		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
 	return data, nil
@@ -47,12 +47,12 @@ func (s *LocalStorage) Put(ctx context.Context, key string, data []byte) error {
 	// 確保目錄存在
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("建立目錄失敗: %w", err)
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	// 寫入檔案
 	if err := os.WriteFile(path, data, 0644); err != nil {
-		return fmt.Errorf("寫入檔案失敗: %w", err)
+		return fmt.Errorf("failed to write file: %w", err)
 	}
 
 	return nil
@@ -67,7 +67,7 @@ func (s *LocalStorage) Exists(ctx context.Context, key string) (bool, error) {
 		if os.IsNotExist(err) {
 			return false, nil
 		}
-		return false, fmt.Errorf("檢查檔案失敗: %w", err)
+		return false, fmt.Errorf("failed to check file: %w", err)
 	}
 
 	return true, nil
@@ -81,7 +81,7 @@ func (s *LocalStorage) Delete(ctx context.Context, key string) error {
 		if os.IsNotExist(err) {
 			return nil // 檔案不存在視為成功
 		}
-		return fmt.Errorf("刪除檔案失敗: %w", err)
+		return fmt.Errorf("failed to delete file: %w", err)
 	}
 
 	return nil

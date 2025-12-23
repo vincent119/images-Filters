@@ -65,25 +65,25 @@ func (l *FileLoader) Load(ctx context.Context, source string) ([]byte, error) {
 	info, err := os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("檔案不存在: %s", source)
+			return nil, fmt.Errorf("file not found: %s", source)
 		}
-		return nil, fmt.Errorf("無法存取檔案: %w", err)
+		return nil, fmt.Errorf("cannot access file: %w", err)
 	}
 
 	// 檢查是否為目錄
 	if info.IsDir() {
-		return nil, fmt.Errorf("路徑是目錄而非檔案: %s", source)
+		return nil, fmt.Errorf("path is a directory, not a file: %s", source)
 	}
 
 	// 檢查檔案大小
 	if l.maxSize > 0 && info.Size() > l.maxSize {
-		return nil, fmt.Errorf("檔案過大: %d 位元組（限制 %d）", info.Size(), l.maxSize)
+		return nil, fmt.Errorf("file too large: %d bytes (limit: %d)", info.Size(), l.maxSize)
 	}
 
 	// 讀取檔案
 	data, err := os.ReadFile(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("讀取檔案失敗: %w", err)
+		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
 	return data, nil
@@ -105,24 +105,24 @@ func (l *FileLoader) validatePath(fullPath string) error {
 	// 取得絕對路徑
 	absPath, err := filepath.Abs(fullPath)
 	if err != nil {
-		return fmt.Errorf("無法解析路徑: %w", err)
+		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
 	// 取得根目錄絕對路徑
 	absRoot, err := filepath.Abs(l.rootPath)
 	if err != nil {
-		return fmt.Errorf("無法解析根目錄: %w", err)
+		return fmt.Errorf("failed to resolve root path: %w", err)
 	}
 
 	// 檢查路徑是否在根目錄內（防止路徑遍歷）
 	relPath, err := filepath.Rel(absRoot, absPath)
 	if err != nil {
-		return fmt.Errorf("無效的相對路徑: %w", err)
+		return fmt.Errorf("invalid relative path: %w", err)
 	}
 
 	// 如果相對路徑以 ".." 開頭，表示嘗試遍歷到根目錄之外
 	if strings.HasPrefix(relPath, "..") {
-		return fmt.Errorf("非法路徑遍歷: %s", fullPath)
+		return fmt.Errorf("illegal path traversal: %s", fullPath)
 	}
 
 	return nil

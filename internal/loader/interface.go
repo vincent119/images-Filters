@@ -37,7 +37,7 @@ func (f *LoaderFactory) GetLoader(source string) (Loader, error) {
 			return loader, nil
 		}
 	}
-	return nil, fmt.Errorf("找不到合適的載入器: %s", source)
+	return nil, fmt.Errorf("no suitable loader found for: %s", source)
 }
 
 // Load 載入圖片

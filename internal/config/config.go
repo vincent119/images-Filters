@@ -21,6 +21,15 @@ type Config struct {
 	Cache      CacheConfig      `mapstructure:"cache"`
 	Logging    LoggingConfig    `mapstructure:"logging" validate:"required"`
 	Metrics    MetricsConfig    `mapstructure:"metrics"`
+	Swagger    SwaggerConfig    `mapstructure:"swagger"`
+}
+
+// SwaggerConfig Swagger UI 設定
+type SwaggerConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Path     string `mapstructure:"path" validate:"omitempty,startswith=/"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 // MetricsConfig Prometheus 指標設定
@@ -156,14 +165,14 @@ func Load(configPath string) (*Config, error) {
 	if err := v.ReadInConfig(); err != nil {
 		// 如果找不到設定檔，使用預設值
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("讀取設定檔失敗: %w", err)
+			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 	}
 
 	// 解析設定到結構體
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("解析設定失敗: %w", err)
+		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	// 使用 validator 驗證設定結構體
@@ -183,9 +192,9 @@ func ValidateConfig(cfg *Config) error {
 			for _, e := range validationErrors {
 				errMsgs = append(errMsgs, formatValidationError(e))
 			}
-			return fmt.Errorf("設定驗證失敗:\n  - %s", strings.Join(errMsgs, "\n  - "))
+			return fmt.Errorf("config validation failed:\n  - %s", strings.Join(errMsgs, "\n  - "))
 		}
-		return fmt.Errorf("設定驗證失敗: %w", err)
+		return fmt.Errorf("config validation failed: %w", err)
 	}
 	return nil
 }
@@ -264,6 +273,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.username", "")
 	v.SetDefault("metrics.password", "")
+
+	// Swagger 預設值
+	v.SetDefault("swagger.enabled", true)
+	v.SetDefault("swagger.path", "/swagger")
+	v.SetDefault("swagger.username", "")
+	v.SetDefault("swagger.password", "")
 }
 
 // GetAddress 取得服務器監聽地址

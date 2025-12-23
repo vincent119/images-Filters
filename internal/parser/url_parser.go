@@ -74,7 +74,7 @@ func (p *URLParser) Parse(path string) (*ParsedURL, error) {
 	path = strings.TrimPrefix(path, "/")
 
 	if path == "" {
-		return nil, fmt.Errorf("空的 URL 路徑")
+		return nil, fmt.Errorf("empty URL path")
 	}
 
 	result := &ParsedURL{}
@@ -82,7 +82,7 @@ func (p *URLParser) Parse(path string) (*ParsedURL, error) {
 
 	// 至少需要兩個部分：安全標記 + 圖片路徑
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("URL 路徑格式錯誤：缺少必要參數")
+		return nil, fmt.Errorf("invalid URL path format: missing required parameters")
 	}
 
 	// 解析第一個部分：簽名或 unsafe
@@ -148,7 +148,7 @@ func (p *URLParser) Parse(path string) (*ParsedURL, error) {
 
 	// 驗證結果
 	if result.ImagePath == "" {
-		return nil, fmt.Errorf("缺少圖片路徑")
+		return nil, fmt.Errorf("missing image path")
 	}
 
 	return result, nil
@@ -212,7 +212,7 @@ func (p *URLParser) parseCrop(s string, result *ParsedURL) bool {
 func (p *URLParser) parseFilters(s string, result *ParsedURL) error {
 	matches := p.filtersRegex.FindStringSubmatch(s)
 	if matches == nil {
-		return fmt.Errorf("無效的濾鏡格式: %s", s)
+		return fmt.Errorf("invalid filter format: %s", s)
 	}
 
 	filterStr := matches[1]
@@ -234,7 +234,7 @@ func (p *URLParser) parseFilters(s string, result *ParsedURL) error {
 func (p *URLParser) parseFilter(s string) (Filter, error) {
 	matches := p.filterRegex.FindStringSubmatch(s)
 	if matches == nil {
-		return Filter{}, fmt.Errorf("無效的濾鏡格式: %s", s)
+		return Filter{}, fmt.Errorf("invalid filter format: %s", s)
 	}
 
 	filter := Filter{

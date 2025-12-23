@@ -39,7 +39,17 @@
 - [x] 設定 zlogger for service (fmt print 改成 zlogger)
 - [x] 設定 zlogger for loader
 - [x] logger config output stdout = console
-- [ ] /healthz and /metrics  skip path not write logs
+- [x] /healthz and /metrics skip path not write logs
+- [x] fmt print 改成 zlogger（已確認無 fmt.Print 使用）
+- [x] add swagger path and implement base auth for single config
+
+```yaml
+swagger:
+  enabled: true
+  path: "/swagger"
+  username: ""
+  password: ""
+```
 
 ### 1.4 URL 解析器
 
@@ -131,8 +141,8 @@
 - [x] 建立 `/metrics` 路由並實作 Basic Auth (`internal/metrics/handler.go`)
 - [x] 建立數據收集邏輯 (處理時間、請求次數、錯誤次數, 請求路徑, 請求方法, 請求狀態碼)
 - [x] 數據展示於 `/metrics` 端點（Prometheus 標準格式）
-- [ ] 撰寫 metrics 單元測試
-- [ ] 加入 image type count, image size count 指標
+- [x] 撰寫 metrics 單元測試 (`prometheus_test.go`)
+- [x] 加入 image type count, image size count 指標（整合於 service 層）
 
 ---
 

@@ -53,9 +53,6 @@ func main() {
 	engine.Use(logger.GinMiddleware())
 	engine.Use(logger.GinRecovery())
 
-	// 建立服務
-	imageService := service.NewImageService(cfg)
-
 	// 建立 Metrics（如果啟用）
 	var m metrics.Metrics
 	if cfg.Metrics.Enabled {
@@ -69,6 +66,14 @@ func main() {
 			logger.String("namespace", namespace),
 			logger.String("path", cfg.Metrics.Path),
 		)
+	}
+
+	// 建立服務（傳入 metrics）
+	var imageService service.ImageService
+	if m != nil {
+		imageService = service.NewImageService(cfg, service.WithMetrics(m))
+	} else {
+		imageService = service.NewImageService(cfg)
 	}
 
 	// 設定路由

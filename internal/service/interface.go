@@ -5,6 +5,7 @@ import (
 	"context"
 	"image"
 
+	"github.com/vincent119/images-filters/internal/metrics"
 	"github.com/vincent119/images-filters/internal/parser"
 )
 
@@ -23,4 +24,18 @@ type ImageResult struct {
 	ContentType string
 	// 處理後的圖片（可選，用於進一步處理）
 	Image image.Image
+}
+
+// ServiceOption 服務選項
+type ServiceOption func(*serviceOptions)
+
+type serviceOptions struct {
+	metrics metrics.Metrics
+}
+
+// WithMetrics 設定 metrics 收集器
+func WithMetrics(m metrics.Metrics) ServiceOption {
+	return func(o *serviceOptions) {
+		o.metrics = m
+	}
 }

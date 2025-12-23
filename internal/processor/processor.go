@@ -69,7 +69,7 @@ func (p *Processor) Process(data []byte, opts ProcessOptions) (image.Image, erro
 	// 解碼圖片
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("解碼圖片失敗: %w", err)
+		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
 
 	// 執行裁切
@@ -102,7 +102,7 @@ func (p *Processor) DecodeImage(data []byte) (image.Image, string, error) {
 func (p *Processor) GetImageSize(data []byte) (width, height int, err error) {
 	config, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return 0, 0, fmt.Errorf("解碼圖片設定失敗: %w", err)
+		return 0, 0, fmt.Errorf("failed to decode image config: %w", err)
 	}
 	return config.Width, config.Height, nil
 }
@@ -205,7 +205,7 @@ func (p *Processor) Encode(img image.Image, format string, quality int) ([]byte,
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("編碼圖片失敗: %w", err)
+		return nil, fmt.Errorf("failed to encode image: %w", err)
 	}
 
 	return buf.Bytes(), nil

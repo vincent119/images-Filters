@@ -8,6 +8,7 @@ import (
 
 	"github.com/vincent119/images-filters/internal/config"
 	"github.com/vincent119/images-filters/internal/loader"
+	"github.com/vincent119/images-filters/internal/metrics"
 	"github.com/vincent119/images-filters/internal/parser"
 	"github.com/vincent119/images-filters/internal/processor"
 	"github.com/vincent119/images-filters/pkg/logger"
@@ -18,10 +19,17 @@ type imageService struct {
 	cfg       *config.Config
 	loader    *loader.LoaderFactory
 	processor *processor.Processor
+	metrics   metrics.Metrics
 }
 
 // NewImageService 建立圖片處理服務
-func NewImageService(cfg *config.Config) ImageService {
+func NewImageService(cfg *config.Config, opts ...ServiceOption) ImageService {
+	// 處理選項
+	options := &serviceOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	// 建立載入器
 	httpLoader := loader.NewHTTPLoader(
 		loader.WithMaxSize(cfg.Server.MaxRequestSize),
@@ -39,7 +47,7 @@ func NewImageService(cfg *config.Config) ImageService {
 		cfg.Processing.MaxHeight,
 	)
 
-	logger.Info("圖片處理服務初始化完成",
+	logger.Info("image service initialized",
 		logger.String("storage_root", cfg.Storage.Local.RootPath),
 		logger.Int("default_quality", cfg.Processing.DefaultQuality),
 		logger.Int("max_width", cfg.Processing.MaxWidth),
@@ -50,12 +58,13 @@ func NewImageService(cfg *config.Config) ImageService {
 		cfg:       cfg,
 		loader:    loaderFactory,
 		processor: proc,
+		metrics:   options.metrics,
 	}
 }
 
 // ProcessImage 處理圖片
 func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.ParsedURL) ([]byte, string, error) {
-	logger.Debug("開始處理圖片",
+	logger.Debug("start processing image",
 		logger.String("image_path", parsedURL.ImagePath),
 		logger.Int("width", parsedURL.Width),
 		logger.Int("height", parsedURL.Height),
@@ -67,14 +76,18 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 	// 1. 載入圖片
 	imageData, err := s.loader.Load(ctx, parsedURL.ImagePath)
 	if err != nil {
-		logger.Warn("載入圖片失敗",
+		logger.Warn("failed to load image",
 			logger.String("image_path", parsedURL.ImagePath),
 			logger.Err(err),
 		)
-		return nil, "", fmt.Errorf("載入圖片失敗: %w", err)
+		// 記錄錯誤指標
+		if s.metrics != nil {
+			s.metrics.RecordError("load_error")
+		}
+		return nil, "", fmt.Errorf("failed to load image: %w", err)
 	}
 
-	logger.Debug("圖片載入成功",
+	logger.Debug("image loaded successfully",
 		logger.String("image_path", parsedURL.ImagePath),
 		logger.Int("size_bytes", len(imageData)),
 	)
@@ -98,27 +111,40 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 	// 3. 處理圖片
 	processedImage, err := s.processor.Process(imageData, opts)
 	if err != nil {
-		logger.Error("處理圖片失敗",
+		logger.Error("failed to process image",
 			logger.String("image_path", parsedURL.ImagePath),
 			logger.Err(err),
 		)
-		return nil, "", fmt.Errorf("處理圖片失敗: %w", err)
+		// 記錄錯誤指標
+		if s.metrics != nil {
+			s.metrics.RecordError("process_error")
+		}
+		return nil, "", fmt.Errorf("failed to process image: %w", err)
 	}
 
 	// 4. 編碼輸出
 	outputData, err := s.processor.Encode(processedImage, opts.Format, opts.Quality)
 	if err != nil {
-		logger.Error("編碼圖片失敗",
+		logger.Error("failed to encode image",
 			logger.String("format", opts.Format),
 			logger.Err(err),
 		)
-		return nil, "", fmt.Errorf("編碼圖片失敗: %w", err)
+		// 記錄錯誤指標
+		if s.metrics != nil {
+			s.metrics.RecordError("encode_error")
+		}
+		return nil, "", fmt.Errorf("failed to encode image: %w", err)
 	}
 
 	// 5. 取得 Content-Type
 	contentType := processor.GetContentType(opts.Format)
 
-	logger.Debug("圖片處理完成",
+	// 6. 記錄圖片處理指標
+	if s.metrics != nil {
+		s.metrics.RecordImageProcessed(opts.Format, int64(len(outputData)))
+	}
+
+	logger.Debug("image processing completed",
 		logger.String("image_path", parsedURL.ImagePath),
 		logger.String("format", opts.Format),
 		logger.Int("output_size", len(outputData)),

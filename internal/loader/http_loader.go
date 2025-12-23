@@ -69,53 +69,53 @@ func (l *HTTPLoader) CanLoad(source string) bool {
 
 // Load 從 HTTP/HTTPS 載入圖片
 func (l *HTTPLoader) Load(ctx context.Context, source string) ([]byte, error) {
-	logger.Debug("HTTP 載入器開始載入",
+	logger.Debug("HTTP loader starting",
 		logger.String("url", source),
 		logger.Int64("max_size", l.maxSize),
 	)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source, nil)
 	if err != nil {
-		logger.Debug("建立 HTTP 請求失敗", logger.Err(err))
-		return nil, fmt.Errorf("建立請求失敗: %w", err)
+		logger.Debug("failed to create HTTP request", logger.Err(err))
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("User-Agent", l.userAgent)
 
 	resp, err := l.client.Do(req)
 	if err != nil {
-		logger.Debug("HTTP 請求失敗",
+		logger.Debug("HTTP request failed",
 			logger.String("url", source),
 			logger.Err(err),
 		)
-		return nil, fmt.Errorf("請求失敗: %w", err)
+		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Debug("HTTP 回應狀態碼錯誤",
+		logger.Debug("HTTP response status error",
 			logger.String("url", source),
 			logger.Int("status", resp.StatusCode),
 		)
-		return nil, fmt.Errorf("HTTP 錯誤: %d %s", resp.StatusCode, resp.Status)
+		return nil, fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
 	}
 
 	// 檢查 Content-Length
 	if l.maxSize > 0 && resp.ContentLength > l.maxSize {
-		logger.Debug("檔案過大",
+		logger.Debug("file too large",
 			logger.Int64("content_length", resp.ContentLength),
 			logger.Int64("max_size", l.maxSize),
 		)
-		return nil, fmt.Errorf("檔案過大: %d 位元組（限制 %d）", resp.ContentLength, l.maxSize)
+		return nil, fmt.Errorf("file too large: %d bytes (limit: %d)", resp.ContentLength, l.maxSize)
 	}
 
 	// 驗證 Content-Type
 	contentType := resp.Header.Get("Content-Type")
 	if !isValidImageContentType(contentType) {
-		logger.Debug("無效的 Content-Type",
+		logger.Debug("invalid Content-Type",
 			logger.String("content_type", contentType),
 		)
-		return nil, fmt.Errorf("無效的 Content-Type: %s", contentType)
+		return nil, fmt.Errorf("invalid Content-Type: %s", contentType)
 	}
 
 	// 讀取回應
@@ -126,15 +126,15 @@ func (l *HTTPLoader) Load(ctx context.Context, source string) ([]byte, error) {
 
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		logger.Debug("讀取回應失敗", logger.Err(err))
-		return nil, fmt.Errorf("讀取回應失敗: %w", err)
+		logger.Debug("failed to read response", logger.Err(err))
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	if l.maxSize > 0 && int64(len(data)) > l.maxSize {
-		return nil, fmt.Errorf("檔案過大: 超過 %d 位元組限制", l.maxSize)
+		return nil, fmt.Errorf("file too large: exceeds %d bytes limit", l.maxSize)
 	}
 
-	logger.Debug("HTTP 載入成功",
+	logger.Debug("HTTP load successful",
 		logger.String("url", source),
 		logger.Int("size", len(data)),
 		logger.String("content_type", contentType),
