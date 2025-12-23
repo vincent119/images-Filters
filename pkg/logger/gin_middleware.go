@@ -10,10 +10,36 @@ import (
 // GinMiddleware 建立 Gin Logger 中介層
 // 使用 zlogger 記錄每個 HTTP 請求
 func GinMiddleware() gin.HandlerFunc {
+	// 不記錄日誌的路徑
+	skipPaths := map[string]bool{
+		"/healthz": true,
+		"/metrics": true,
+	}
+
+	// 不記錄日誌的路徑前綴
+	skipPathPrefixes := []string{
+		"/swagger",
+	}
+
 	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		// 跳過特定路徑的日誌記錄
+		if skipPaths[path] {
+			c.Next()
+			return
+		}
+
+		// 檢查路徑前綴
+		for _, prefix := range skipPathPrefixes {
+			if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
+				c.Next()
+				return
+			}
+		}
+
 		// 記錄開始時間
 		startTime := time.Now()
-		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
 
 		// 處理請求
@@ -50,11 +76,11 @@ func GinMiddleware() gin.HandlerFunc {
 		// 根據狀態碼選擇日誌等級
 		switch {
 		case statusCode >= 500:
-			Error("HTTP 請求", fields...)
+			Error("HTTP request", fields...)
 		case statusCode >= 400:
-			Warn("HTTP 請求", fields...)
+			Warn("HTTP request", fields...)
 		default:
-			Info("HTTP 請求", fields...)
+			Info("", fields...)
 		}
 	}
 }
@@ -66,7 +92,7 @@ func GinRecovery() gin.HandlerFunc {
 		defer func() {
 			if err := recover(); err != nil {
 				// 記錄 panic 錯誤
-				Error("HTTP 請求發生 Panic",
+				Error("HTTP request panic",
 					zlogger.Any("error", err),
 					zlogger.String("method", c.Request.Method),
 					zlogger.String("path", c.Request.URL.Path),
