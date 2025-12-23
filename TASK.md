@@ -144,60 +144,79 @@ swagger:
 - [x] 撰寫 metrics 單元測試 (`prometheus_test.go`)
 - [x] 加入 image type count, image size count 指標（整合於 service 層）
 
+### 1.13 uber-go/fx 依賴注入重構
+
+- [x] 安裝 `uber-go/fx` 套件
+- [x] 建立 `internal/fx/` 模組目錄
+- [x] 實作 Config Module (`internal/fx/config.go`)
+- [x] 實作 Logger Module (`internal/fx/logger.go`)
+- [x] 實作 Metrics Module (`internal/fx/metrics.go`)
+- [x] 實作 Service Module (`internal/fx/service.go`)
+- [x] 實作 HTTP Server Module (`internal/fx/server.go`)
+- [x] 重構 `cmd/server/main.go` 使用 fx.New()
+- [x] 實作 Lifecycle hooks（啟動/關閉）
+- [ ] 撰寫 DI 模組測試
+
 ---
 
 ## Phase 2: 濾鏡與浮水印
 
 ### 2.1 濾鏡管線架構
 
-- [ ] 建立 `internal/filter/interface.go` 定義濾鏡介面
-- [ ] 實作濾鏡管線 (Filter Pipeline)
-- [ ] 實作濾鏡參數解析器
-- [ ] 建立濾鏡註冊機制
+- [x] 建立 `internal/filter/interface.go` 定義濾鏡介面
+- [x] 實作濾鏡管線 (Filter Pipeline)
+- [x] 實作濾鏡參數解析器
+- [x] 建立濾鏡註冊機制
 
 ### 2.2 基本濾鏡實作
 
-- [ ] 實作 `blur.go` - 模糊濾鏡
-- [ ] 實作 `grayscale.go` - 灰階濾鏡
-- [ ] 實作 `brightness.go` - 亮度調整
-- [ ] 實作 `contrast.go` - 對比度調整
-- [ ] 實作 `saturation.go` - 飽和度調整
-- [ ] 實作 `sharpen.go` - 銳化濾鏡
+- [x] 實作 `blur.go` - 模糊濾鏡
+- [x] 實作 `grayscale.go` - 灰階濾鏡
+- [x] 實作 `brightness.go` - 亮度調整
+- [x] 實作 `contrast.go` - 對比度調整
+- [x] 實作 `saturation.go` - 飽和度調整
+- [x] 實作 `sharpen.go` - 銳化濾鏡
 
 ### 2.3 顏色處理濾鏡
 
-- [ ] 實作 `rgb.go` - RGB 調整
-- [ ] 實作 `sepia.go` - 復古色調
-- [ ] 實作 `equalize.go` - 均衡化
+- [x] 實作 `rgb.go` - RGB 調整
+- [x] 實作 `sepia.go` - 復古色調
+- [x] 實作 `equalize.go` - 均衡化
+- [x] 實作 `gamma.go` - Gamma 校正
+- [x] 實作 `hue.go` - 色相調整
 
 ### 2.4 特效濾鏡
 
-- [ ] 實作 `rotate.go` - 旋轉
-- [ ] 實作 `round_corners.go` - 圓角
-- [ ] 實作 `noise.go` - 雜訊效果
+- [x] 實作 `rotate.go` - 旋轉
+- [x] 實作 `round_corners.go` - 圓角
+- [x] 實作 `noise.go` - 雜訊效果
+- [x] 實作 `fliph.go` - 水平翻轉
+- [x] 實作 `flipv.go` - 垂直翻轉
+- [x] 實作 `pixelate.go` - 像素化
 
 ### 2.5 輸出控制濾鏡
 
-- [ ] 實作 `quality.go` - 品質控制
-- [ ] 實作 `format.go` - 格式轉換
-- [ ] 實作 `strip_exif.go` - 移除 EXIF
-- [ ] 實作 `strip_icc.go` - 移除 ICC Profile
+- [x] 實作 `quality.go` - 品質控制
+- [x] 實作 `format.go` - 格式轉換
+- [x] 實作 `strip_exif.go` - 移除 EXIF
+- [x] 實作 `strip_icc.go` - 移除 ICC Profile
+- [x] 實作 `autoorient.go` - 自動方向校正
 
 ### 2.6 浮水印功能
 
-- [ ] 實作 `watermark.go`
-  - [ ] 圖片浮水印
-  - [ ] 位置控制 (x, y 座標)
-  - [ ] 透明度控制
-  - [ ] 比例縮放
-- [ ] 支援多個浮水印
+- [x] 實作 `watermark.go`
+  - [x] 圖片浮水印
+  - [x] 位置控制 (9 種位置 + x,y offset)
+  - [x] 透明度控制
+  - [x] 比例縮放
+- [x] 支援多個浮水印（可組合多個 watermark 濾鏡）
 
 ### 2.7 Phase 2 測試驗證
 
-- [ ] 測試各種濾鏡效果
-- [ ] 測試濾鏡組合 (連續套用)
-- [ ] 測試浮水印功能
-- [ ] 確認所有單元測試通過
+- [x] 測試各種濾鏡效果
+- [x] 測試濾鏡組合 (連續套用)
+- [x] 測試浮水印功能
+- [x] 確認所有單元測試通過
 
 ---
 
