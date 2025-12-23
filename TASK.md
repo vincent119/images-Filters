@@ -93,10 +93,11 @@ swagger:
 - [x] 建立編碼器（整合於 `processor.go`）
 - [x] 實作 JPEG 編碼 (可調品質)
 - [x] 實作 PNG 編碼
-- [ ] 實作 WebP 編碼
+- [x] 實作 WebP 編碼
 - [x] 實作 GIF 編碼
 - [x] 實作格式自動偵測
-- [ ] 撰寫編碼器單元測試
+- [x] 撰寫編碼器單元測試
+
 
 ### 1.8 本地儲存
 
@@ -224,13 +225,14 @@ swagger:
 
 ### 3.1 HMAC 安全機制
 
-- [ ] 建立 `internal/security/hmac.go`
-- [ ] 實作 HMAC-SHA256 簽名生成
-- [ ] 實作 Base64 URL-safe 編碼
-- [ ] 實作簽名驗證邏輯
-- [ ] 建立 `internal/api/middleware.go` 安全中介層
-- [ ] 處理 `/unsafe/` 路徑 (開發模式)
-- [ ] 撰寫安全機制單元測試
+- [x] 建立 `internal/security/hmac.go`
+- [x] 實作 HMAC-SHA256 簽名生成
+- [x] 實作 Base64 URL-safe 編碼
+- [x] 實作簽名驗證邏輯
+- [x] 建立 `internal/api/middleware.go` 安全中介層
+- [x] 處理 `/unsafe/` 路徑 (開發模式)
+- [x] 撰寫安全機制單元測試
+
 
 ### 3.2 URL 簽名工具庫
 

@@ -27,10 +27,14 @@ func Setup(engine *gin.Engine, imageService service.ImageService, cfg *config.Co
 	engine.Use(api.CORSMiddleware())
 	engine.Use(api.RecoveryMiddleware())
 
+	// 安全驗證中介層
+	engine.Use(api.SecurityMiddleware(&cfg.Security))
+
 	// 如果啟用 Metrics，加入 Metrics 中介層
 	if cfg.Metrics.Enabled && m != nil {
 		engine.Use(metrics.GinMiddleware(m))
 	}
+
 
 	// 健康檢查端點
 	engine.GET("/healthz", handler.HealthCheck)

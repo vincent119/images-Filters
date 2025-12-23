@@ -77,6 +77,40 @@ http://localhost:8080/unsafe/300x200/filters:grayscale()/https%3A%2F%2Fexample.c
 http://localhost:8080/unsafe/-300x200/filters:blur(5)/https%3A%2F%2Fexample.com%2Fimage.jpg
 ```
 
+## 🔒 安全機制
+
+### HMAC URL 簽名
+
+啟用安全機制後，所有圖片處理請求都需要有效的 HMAC-SHA256 簽名。
+
+```yaml
+# config/config.yaml
+security:
+  enabled: true
+  security_key: "your-secret-key-min-16-chars"
+  allow_unsafe: false  # 生產環境建議關閉
+```
+
+### URL 格式
+
+```bash
+# 有簽名
+http://localhost:8080/{signature}/300x200/test.jpg
+
+# 開發模式（需 allow_unsafe: true）
+http://localhost:8080/unsafe/300x200/test.jpg
+```
+
+### 產生簽名
+
+```go
+import "github.com/vincent119/images-filters/internal/security"
+
+signer := security.NewSigner("your-secret-key")
+signedURL := signer.SignURL("300x200/filters:blur(5)/test.jpg")
+// 輸出: /{base64-signature}/300x200/filters:blur(5)/test.jpg
+```
+
 ## 🛠️ 開發
 
 ```bash
@@ -92,6 +126,7 @@ make fmt
 # 生成 Swagger 文檔
 make swagger
 ```
+
 
 ## 📁 專案結構
 
