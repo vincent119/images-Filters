@@ -60,9 +60,7 @@ func NewStorageByType(ctx context.Context, cfg *config.Config, storageType strin
 		return NewMixedStorage(source, result), nil
 
 	case "no_storage":
-		// Assuming we implement a no-op storage or similar
-		// For now, return error or implement minimal dummy
-		return nil, fmt.Errorf("no_storage type not implemented yet")
+		return NewNoStorage(), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported storage type: %s", storageType)

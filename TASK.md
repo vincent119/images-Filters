@@ -272,8 +272,8 @@ swagger:
 
 ### 3.6 無儲存模式
 
-- [ ] 實作 `internal/storage/no_storage.go`
-- [ ] 用於測試/基準測試
+- [x] 實作 `internal/storage/no_storage.go`
+- [x] 用於測試/基準測試
 
 ### 3.7 Phase 3 測試驗證
 
