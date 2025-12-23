@@ -17,6 +17,7 @@ func main() {
 		appfx.ConfigModule,
 		appfx.LoggerModule,
 		appfx.MetricsModule,
+		appfx.StorageModule,
 		appfx.ServiceModule,
 		appfx.ServerModule,
 

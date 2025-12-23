@@ -98,7 +98,6 @@ swagger:
 - [x] 實作格式自動偵測
 - [x] 撰寫編碼器單元測試
 
-
 ### 1.8 本地儲存
 
 - [x] 建立 `internal/storage/interface.go` 定義介面
@@ -233,7 +232,6 @@ swagger:
 - [x] 處理 `/unsafe/` 路徑 (開發模式)
 - [x] 撰寫安全機制單元測試
 
-
 ### 3.2 URL 簽名工具庫
 
 - [x] 建立 `internal/security/url_signer.go`
@@ -242,7 +240,6 @@ swagger:
 - [x] 建立 CLI 簽名工具
 - [x] 撰寫使用文件
 
-
 ### 3.3 來源白名單
 
 - [x] 實作 allowed_sources 設定
@@ -250,25 +247,28 @@ swagger:
 - [x] 實作來源驗證中介層
 - [x] 撰寫白名單單元測試
 
-
 ### 3.4 AWS S3 儲存
 
-- [ ] 安裝 AWS SDK v2
-- [ ] 實作 `internal/storage/s3.go`
-  - [ ] Get 方法
-  - [ ] Put 方法
-  - [ ] Exists 方法
-  - [ ] Delete 方法
-- [ ] 支援認證設定
-- [ ] 支援區域設定
-- [ ] 撰寫 S3 儲存測試 (mock)
+- [x] 安裝 AWS SDK v2
+- [x] 實作 `internal/storage/s3.go`
+  - [x] Get 方法
+  - [x] Put 方法
+  - [x] Exists 方法
+  - [x] Delete 方法
+- [x] 支援認證設定
+- [x] 支援區域設定
+- [x] 撰寫 S3 儲存測試 (mock)
 
 ### 3.5 混合儲存模式
 
-- [ ] 實作 `internal/storage/mixed.go`
-- [ ] 支援原始檔/結果檔分離儲存
-- [ ] 實作儲存路由邏輯
-- [ ] 撰寫混合儲存測試
+- [x] 實作 `internal/storage/mixed.go`
+- [x] 支援原始檔/結果檔分離儲存
+- [x] 實作儲存路由邏輯
+- [x] 撰寫混合儲存測試
+
+- [x] 實作 `internal/fx/storage.go`
+- [x] 註冊 Storage Module 到 `cmd/server/main.go`
+- [x] 注入 Storage 到 `internal/service/image_service.go`
 
 ### 3.6 無儲存模式
 

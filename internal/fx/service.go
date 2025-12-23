@@ -6,6 +6,7 @@ import (
 	"github.com/vincent119/images-filters/internal/config"
 	"github.com/vincent119/images-filters/internal/metrics"
 	"github.com/vincent119/images-filters/internal/service"
+	"github.com/vincent119/images-filters/internal/storage"
 )
 
 // ServiceModule provides service dependencies
@@ -18,6 +19,7 @@ type ServiceParams struct {
 	fx.In
 
 	Config  *config.Config
+	Storage storage.Storage
 	Metrics metrics.Metrics `optional:"true"`
 }
 
@@ -29,5 +31,5 @@ func NewImageService(params ServiceParams) service.ImageService {
 		opts = append(opts, service.WithMetrics(params.Metrics))
 	}
 
-	return service.NewImageService(params.Config, opts...)
+	return service.NewImageService(params.Config, params.Storage, opts...)
 }

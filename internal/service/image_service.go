@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"github.com/vincent119/images-filters/internal/metrics"
 	"github.com/vincent119/images-filters/internal/parser"
 	"github.com/vincent119/images-filters/internal/processor"
+	"github.com/vincent119/images-filters/internal/storage"
 	"github.com/vincent119/images-filters/pkg/logger"
 )
 
@@ -20,10 +23,11 @@ type imageService struct {
 	loader    *loader.LoaderFactory
 	processor *processor.Processor
 	metrics   metrics.Metrics
+	storage   storage.Storage
 }
 
 // NewImageService 建立圖片處理服務
-func NewImageService(cfg *config.Config, opts ...ServiceOption) ImageService {
+func NewImageService(cfg *config.Config, store storage.Storage, opts ...ServiceOption) ImageService {
 	// 處理選項
 	options := &serviceOptions{}
 	for _, opt := range opts {
@@ -49,6 +53,7 @@ func NewImageService(cfg *config.Config, opts ...ServiceOption) ImageService {
 
 	logger.Info("image service initialized",
 		logger.String("storage_root", cfg.Storage.Local.RootPath),
+		logger.String("storage_type", cfg.Storage.Type),
 		logger.Int("default_quality", cfg.Processing.DefaultQuality),
 		logger.Int("max_width", cfg.Processing.MaxWidth),
 		logger.Int("max_height", cfg.Processing.MaxHeight),
@@ -59,6 +64,7 @@ func NewImageService(cfg *config.Config, opts ...ServiceOption) ImageService {
 		loader:    loaderFactory,
 		processor: proc,
 		metrics:   options.metrics,
+		storage:   store,
 	}
 }
 
@@ -73,8 +79,42 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		logger.Bool("fit_in", parsedURL.FitIn),
 	)
 
-	// 1. 載入圖片
-	imageData, err := s.loader.Load(ctx, parsedURL.ImagePath)
+	// 1. 檢查儲存是否存在 (Cache Hit)
+	resultKey := s.generateKey(parsedURL)
+	if data, err := s.storage.Get(ctx, resultKey); err == nil {
+		logger.Debug("cache hit", logger.String("key", resultKey))
+
+		// 判斷 Content-Type
+		// 這裡假設我們只存圖片，且可以從 key 或內容推斷
+		// 為簡化，我們重新使用 determineFormat 推斷 ContentType，或者儲存 metadata
+		// 簡單起見，我們再次依賴 determineFormat (雖然可能不精確如果 format 被改了)
+		// 更好的方式是儲存 metadata，但在 key 中包含 format 即可
+		format := s.determineFormat(parsedURL)
+		return data, processor.GetContentType(format), nil
+	}
+
+	// 2. 載入圖片 (Source)
+	var imageData []byte
+	var err error
+
+	// 如果是 HTTP URL，使用 Loader
+	if strings.HasPrefix(parsedURL.ImagePath, "http") {
+		imageData, err = s.loader.Load(ctx, parsedURL.ImagePath)
+	} else {
+		// 嘗試從 Storage 讀取 (Source)
+		// 注意: MixedStorage.Get 會先查 Result，再查 Source
+		// 這裡我們直接查原始路徑
+		imageData, err = s.storage.Get(ctx, parsedURL.ImagePath)
+
+		// 如果 Storage 找不到 (例如 LocalStorage 沒設好或其實在 Loader 路徑)
+		// fallback 到 file loader (如果 configured root path matches)
+		// 但這會變複雜。簡單起見，若 storage 失敗則嘗試 loader
+		if err != nil {
+			logger.Debug("storage load failed, falling back to loader", logger.Err(err))
+			imageData, err = s.loader.Load(ctx, parsedURL.ImagePath)
+		}
+	}
+
 	if err != nil {
 		logger.Warn("failed to load image",
 			logger.String("image_path", parsedURL.ImagePath),
@@ -144,8 +184,20 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		s.metrics.RecordImageProcessed(opts.Format, int64(len(outputData)))
 	}
 
+	// 7. 儲存結果
+	// 非同步寫入儲存，避免阻塞回應
+	go func() {
+		if err := s.storage.Put(context.Background(), resultKey, outputData); err != nil {
+			logger.Warn("failed to save image to storage",
+				logger.String("key", resultKey),
+				logger.Err(err),
+			)
+		}
+	}()
+
 	logger.Debug("image processing completed",
 		logger.String("image_path", parsedURL.ImagePath),
+		logger.String("result_key", resultKey),
 		logger.String("format", opts.Format),
 		logger.Int("output_size", len(outputData)),
 	)
@@ -185,6 +237,53 @@ func normalizeFormat(format string) string {
 	default:
 		return "jpeg"
 	}
+}
+
+// generateKey 產生快取鍵值
+func (s *imageService) generateKey(p *parser.ParsedURL) string {
+	// 基礎鍵值：路徑
+	base := p.ImagePath
+
+	// 參數簽名
+	// 格式: w{width}_h{height}_f{format}_q{quality}_...
+
+	// 處理參數
+	params := []string{
+		fmt.Sprintf("w%d", p.Width),
+		fmt.Sprintf("h%d", p.Height),
+		fmt.Sprintf("fh%v", p.FlipH),
+		fmt.Sprintf("fv%v", p.FlipV),
+		fmt.Sprintf("fit%v", p.FitIn),
+		fmt.Sprintf("sm%v", p.Smart),
+		fmt.Sprintf("c%d_%d_%d_%d", p.CropLeft, p.CropTop, p.CropRight, p.CropBottom),
+	}
+
+	// 濾鏡
+	for _, f := range p.Filters {
+		params = append(params, fmt.Sprintf("%s(%s)", f.Name, strings.Join(f.Params, ",")))
+	}
+
+	// 格式與品質
+	format := s.determineFormat(p)
+	params = append(params, fmt.Sprintf("fmt_%s", format))
+	params = append(params, fmt.Sprintf("q%d", s.cfg.Processing.DefaultQuality))
+
+	// 組合
+	paramStr := strings.Join(params, "-")
+
+	// 雜湊處理參數部分以縮短長度
+	hash := sha256.Sum256([]byte(paramStr))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	// 加上副檔名
+	ext := filepath.Ext(base)
+	if ext == "" {
+		ext = fmt.Sprintf(".%s", format)
+	}
+
+	// 結果：cache/hash/filename
+	// 為了避免單一目錄過大，可以使用 hash 前綴分層
+	return fmt.Sprintf("cache/%s/%s/%s", hashStr[:2], hashStr[2:], filepath.Base(base))
 }
 
 // isValidFormat 檢查是否為有效格式
