@@ -30,10 +30,14 @@ func Setup(engine *gin.Engine, imageService service.ImageService, cfg *config.Co
 	// 安全驗證中介層
 	engine.Use(api.SecurityMiddleware(&cfg.Security))
 
+	// 來源白名單中介層
+	engine.Use(api.SourceValidatorMiddleware(cfg.Security.AllowedSources))
+
 	// 如果啟用 Metrics，加入 Metrics 中介層
 	if cfg.Metrics.Enabled && m != nil {
 		engine.Use(metrics.GinMiddleware(m))
 	}
+
 
 
 	// 健康檢查端點

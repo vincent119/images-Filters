@@ -245,10 +245,11 @@ swagger:
 
 ### 3.3 來源白名單
 
-- [ ] 實作 allowed_sources 設定
-- [ ] 支援萬用字元 (`*.example.com`)
-- [ ] 實作來源驗證中介層
-- [ ] 撰寫白名單單元測試
+- [x] 實作 allowed_sources 設定
+- [x] 支援萬用字元 (`*.example.com`)
+- [x] 實作來源驗證中介層
+- [x] 撰寫白名單單元測試
+
 
 ### 3.4 AWS S3 儲存
 

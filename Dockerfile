@@ -42,7 +42,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 建立非 root 使用者
 RUN groupadd -r ${USER_NAME} \
-    && useradd -r -g ${USER_NAME} ${USER_NAME}
+    && useradd -r -g ${USER_NAME} ${USER_NAME} \
+    && mkdir /app/config
 
 # 設定工作目錄
 WORKDIR /app
