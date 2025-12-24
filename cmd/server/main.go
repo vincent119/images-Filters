@@ -2,6 +2,8 @@
 package main
 
 import (
+	"net/http"
+	_ "net/http/pprof"
 	"strings"
 
 	"go.uber.org/fx"
@@ -17,6 +19,7 @@ func main() {
 		appfx.ConfigModule,
 		appfx.LoggerModule,
 		appfx.MetricsModule,
+		appfx.CacheModule,
 		appfx.StorageModule,
 		appfx.ServiceModule,
 		appfx.ServerModule,
@@ -24,6 +27,16 @@ func main() {
 		// Use zlogger for fx logs
 		fx.WithLogger(func() fxevent.Logger {
 			return &fxZapLogger{}
+		}),
+
+		// Enable pprof
+		fx.Invoke(func() {
+			go func() {
+				logger.Info("starting pprof server on :6060")
+				if err := http.ListenAndServe(":6060", nil); err != nil {
+					logger.Error("pprof server failed", logger.Err(err))
+				}
+			}()
 		}),
 	)
 

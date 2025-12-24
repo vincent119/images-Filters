@@ -53,3 +53,5 @@ config/config.local.yaml
 config/secrets.yaml
 config/config.yaml
 
+
+data/

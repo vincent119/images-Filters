@@ -16,6 +16,9 @@ type Loader interface {
 
 	// CanLoad 檢查是否可以載入指定來源
 	CanLoad(source string) bool
+
+	// LoadStream 載入圖片資料串流
+	LoadStream(ctx context.Context, source string) (io.ReadCloser, error)
 }
 
 // LoaderFactory 載入器工廠
@@ -47,6 +50,15 @@ func (f *LoaderFactory) Load(ctx context.Context, source string) ([]byte, error)
 		return nil, err
 	}
 	return loader.Load(ctx, source)
+}
+
+// LoadStream 載入圖片串流
+func (f *LoaderFactory) LoadStream(ctx context.Context, source string) (io.ReadCloser, error) {
+	loader, err := f.GetLoader(source)
+	if err != nil {
+		return nil, err
+	}
+	return loader.LoadStream(ctx, source)
 }
 
 // readAll 讀取所有資料（帶大小限制）

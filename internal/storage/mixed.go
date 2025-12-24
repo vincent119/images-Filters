@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"io"
 )
 
 // MixedStorage implements hybrid storage strategy
@@ -67,4 +68,21 @@ func (s *MixedStorage) Exists(ctx context.Context, key string) (bool, error) {
 func (s *MixedStorage) Delete(ctx context.Context, key string) error {
 	// Only delete from result storage to protect source
 	return s.result.Delete(ctx, key)
+}
+
+// GetStream tries to get stream from result storage first, then source storage
+func (s *MixedStorage) GetStream(ctx context.Context, key string) (io.ReadCloser, error) {
+	// Try result storage first
+	reader, err := s.result.GetStream(ctx, key)
+	if err == nil {
+		return reader, nil
+	}
+
+	// Try source
+	return s.source.GetStream(ctx, key)
+}
+
+// PutStream saves to Result storage only
+func (s *MixedStorage) PutStream(ctx context.Context, key string, r io.Reader) error {
+	return s.result.PutStream(ctx, key, r)
 }

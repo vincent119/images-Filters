@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 )
 
@@ -37,6 +38,17 @@ func (m *MockStorage) Exists(ctx context.Context, key string) (bool, error) {
 func (m *MockStorage) Delete(ctx context.Context, key string) error {
 	delete(m.data, key)
 	return nil
+}
+
+func (m *MockStorage) GetStream(ctx context.Context, key string) (io.ReadCloser, error) {
+	// For testing MixedStorage, we might need real implementation if tested?
+	// But current tests use []byte Get/Put.
+	// So unimplemented is fine for now unless we add stream tests.
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockStorage) PutStream(ctx context.Context, key string, r io.Reader) error {
+	return errors.New("not implemented")
 }
 
 func TestMixedStorage(t *testing.T) {

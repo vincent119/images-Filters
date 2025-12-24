@@ -114,7 +114,7 @@ swagger:
 - [x] 建立 `internal/service/interface.go` 定義 Service 介面
 - [x] 實作 `internal/service/image_service.go` 圖片處理業務邏輯
 - [x] 實作圖片處理流程（載入 → 處理 → 編碼）
-- [ ] 撰寫 Service 層單元測試
+- [x] 撰寫 Service 層單元測試
 
 ### 1.10 API 處理器整合
 
@@ -127,10 +127,10 @@ swagger:
 ### 1.11 Phase 1 測試驗證
 
 - [/] 啟動服務器進行手動測試
-- [ ] 測試基本 resize 功能
-- [ ] 測試 crop 功能
-- [ ] 測試 flip 功能
-- [ ] 測試不同圖片格式
+- [x] 測試基本 resize 功能
+- [x] 測試 crop 功能
+- [x] 測試 flip 功能
+- [x] 測試不同圖片格式
 - [x] 確認所有單元測試通過
 
 ### 1.12 Phase 1 prometheus metrics
@@ -155,7 +155,7 @@ swagger:
 - [x] 實作 HTTP Server Module (`internal/fx/server.go`)
 - [x] 重構 `cmd/server/main.go` 使用 fx.New()
 - [x] 實作 Lifecycle hooks（啟動/關閉）
-- [ ] 撰寫 DI 模組測試
+- [x] 撰寫 DI 模組測試
 
 ---
 
@@ -277,11 +277,11 @@ swagger:
 
 ### 3.7 Phase 3 測試驗證
 
-- [ ] 測試 HMAC 簽名驗證
-- [ ] 測試 unsafe 模式
-- [ ] 測試 S3 儲存
-- [ ] 測試混合儲存模式
-- [ ] 測試來源白名單
+- [x] 測試 HMAC 簽名驗證
+- [x] 測試 unsafe 模式
+- [x] 測試 S3 儲存
+- [x] 測試混合儲存模式
+- [x] 測試來源白名單
 
 ---
 
@@ -289,36 +289,41 @@ swagger:
 
 ### 4.1 Redis 快取
 
-- [ ] 安裝 go-redis
-- [ ] 建立 `internal/cache/interface.go`
-- [ ] 實作 `internal/cache/redis.go`
-  - [ ] Get 方法
-  - [ ] Set 方法 (含 TTL)
-  - [ ] Delete 方法
-  - [ ] Exists 方法
-- [ ] 實作快取鍵生成策略
-- [ ] 整合快取到處理流程
-- [ ] 撰寫 Redis 快取測試
+- [x] 安裝 go-redis
+- [x] 建立 `internal/cache/interface.go`
+- [x] 實作 `internal/cache/redis.go`
+  - [x] Get 方法
+  - [x] Set 方法 (含 TTL)
+  - [x] Delete 方法
+  - [x] Exists 方法
+- [x] 實作快取鍵生成策略
+- [x] 整合快取到處理流程
+- [x] 撰寫 Redis 快取測試
 
 ### 4.2 記憶體快取
 
-- [ ] 實作 `internal/cache/memory.go`
-- [ ] 使用 LRU 策略
-- [ ] 設定最大記憶體限制
-- [ ] 實作 TTL 過期機制
+- [x] 實作 `internal/cache/memory.go`
+- [x] 使用 LRU 策略
+- [x] 設定最大記憶體限制
+- [x] 實作 TTL 過期機制
 
 ### 4.3 Worker Pool
 
-- [ ] 實作 Worker Pool
-- [ ] 限制同時處理數量
-- [ ] 實作任務佇列
-- [ ] 支援優雅關閉
+- [x] 實作 Worker Pool (Semaphore 模式)
+- [x] 限制同時處理數量
+- [x] 實作任務佇列 (Buffered Channel)
+- [x] 支援優雅關閉
 
 ### 4.4 串流處理
 
-- [ ] 實作大圖片串流讀取
-- [ ] 實作串流寫入
-- [ ] 減少記憶體佔用
+- [x] 實作大圖片串流讀取 (Stream Reading) <!-- id: 4 -->
+  - [x] 更新 `Storage` 介面 (`GetStream`, `PutStream`) <!-- id: 5 -->
+  - [x] 更新 `Loader` 介面 (`LoadStream`) <!-- id: 6 -->
+  - [x] 實作 `S3Storage`, `LocalStorage`, `HTTPLoader`, `FileLoader` 的串流方法 <!-- id: 7 -->
+  - [x] 修改 `Processor` 支援 `io.Reader` 輸入 <!-- id: 8 -->
+  - [x] 整合至 `ImageService` 流程 <!-- id: 9 -->
+- [x] 壓力測試與基準測試 (Benchmark) <!-- id: 10 -->
+  - [x] 比較串流前後的記憶體使用量 (減少約 25% 記憶體佔用) <!-- id: 11 -->
 
 ### 4.5 Prometheus 監控
 
@@ -326,8 +331,69 @@ swagger:
 - [ ] 建立 `/metrics` 端點
 - [ ] 實作處理時間指標
 - [ ] 實作請求計數指標
-- [ ] 實作錯誤率指標
+
+#### HTTP 入口層指標
+
+- [ ] 實作請求總數指標（依 method / route / status）
+- [ ] 實作請求處理時間指標（Histogram，P50/P95/P99）
+- [ ] 實作進行中請求數（inflight requests）
+- [ ] 實作請求大小指標（request bytes）
+- [ ] 實作回應大小指標（response bytes）
+- [ ] 實作錯誤率指標（4xx / 5xx 分類）
+
+#### 圖片處理核心指標
+
+- [ ] 實作圖片處理總耗時指標
+- [ ] 拆分處理階段耗時（decode / transform / encode）
+- [ ] 實作圖片處理操作類型計數（resize / crop / flip / watermark / filter）
+- [ ] 實作圖片處理錯誤分類指標（decode_failed / unsupported / timeout / oom）
+- [ ] 實作輸入圖片尺寸分佈指標
+- [ ] 實作輸出圖片尺寸分佈指標
+
+#### 快取（Cache）指標
+
+- [ ] 實作快取命中 / 未命中計數
 - [ ] 實作快取命中率指標
+- [ ] 實作快取讀取延遲指標
+- [ ] 實作快取寫入延遲指標
+- [ ] 實作快取淘汰（eviction）計數（若有 LRU / TTL）
+
+#### 儲存後端（S3 / 本地 / 其他）
+
+- [ ] 實作儲存後端操作計數（get / put）
+- [ ] 實作儲存後端延遲指標
+- [ ] 實作儲存後端錯誤分類（timeout / not_found / permission）
+- [ ] 實作儲存後端重試次數指標
+
+#### 安全與風控
+
+- [ ] 實作請求簽名驗證成功 / 失敗計數
+- [ ] 實作被拒絕請求原因指標（bad_signature / expired / rate_limited）
+- [ ] 實作流量限制（Rate Limit）觸發次數指標
+
+#### 系統與效能觀測
+
+- [ ] 启用 Go runtime 預設指標（GC / goroutines / memory）
+- [ ] 實作圖片 buffer pool 使用率指標（如使用 sync.Pool）
+- [ ] 實作服務啟動時間指標（uptime）
+
+
+#### 可觀測性整合
+
+- [ ] 設計統一的 metrics 命名規則（避免 label 爆炸）
+- [ ] 製作 Prometheus Recording Rules（P95 / 錯誤率）
+- [ ] 建立 Grafana Dashboard（HTTP / 圖片處理 / Cache / Storage）
+- [ ] 設定 Alert 規則（高錯誤率 / 高延遲 / Cache 命中率下降）
+
+#### Grafana Dashboard JSON
+
+- [ ] 建立 Grafana Dashboard JSON
+  - [ ] 複製到 ./example/grafana-dashboard.json
+
+#### Alert Manager rules
+
+- [ ] 建立 Alert Manager rules
+  - [ ] 複製到 ./example/alert_rules/alert_rules.yml
 
 ### 4.6 Phase 4 測試驗證
 
@@ -342,63 +408,67 @@ swagger:
 
 ### 5.1 AVIF 格式支援
 
-- [ ] 安裝 `github.com/gen2brain/avif`
-- [ ] 實作 AVIF 解碼
-- [ ] 實作 AVIF 編碼
-- [ ] 支援品質控制
-- [ ] 撰寫 AVIF 測試
+- [x] 安裝 `github.com/gen2brain/avif`
+- [x] 實作 AVIF 解碼
+- [x] 實作 AVIF 編碼
+- [x] 支援品質控制
+- [x] 撰寫 AVIF 測試
 
 ### 5.2 JPEG XL 格式支援
 
-- [ ] 安裝 `github.com/ArtificialLegacy/go-jxl`
-- [ ] 實作 JPEG XL 解碼
-- [ ] 實作 JPEG XL 編碼
-- [ ] 支援無損轉換 JPEG
-- [ ] 撰寫 JPEG XL 測試
+- [x] 安裝 `github.com/gen2brain/jpegxl`
+- [x] 實作 JPEG XL 解碼
+- [x] 實作 JPEG XL 編碼
+- [ ] 支援無損轉換 JPEG (目前僅支援 Pixel-based 編碼)
+- [x] 撰寫 JPEG XL 測試
 
 ### 5.3 HEIC 格式支援
 
-- [ ] 安裝 `github.com/jdeng/goheif`
-- [ ] 實作 HEIC 解碼
-- [ ] 轉換為其他格式輸出
-- [ ] 撰寫 HEIC 測試
+- [x] 安裝 `github.com/gen2brain/heic` (僅支援解碼)
+- [x] 實作 HEIC 解碼 (透過 Import 註冊)
+- [x] 轉換為其他格式輸出 (整合至 Process 流程)
+- [x] 撰寫 HEIC 測試 (GetContentType)
 
 ### 5.4 SVG 渲染
 
-- [ ] 安裝 `github.com/srwiley/oksvg`
-- [ ] 實作 SVG 解析
-- [ ] 實作 SVG → 點陣圖渲染
-- [ ] 支援自訂輸出尺寸
-- [ ] 撰寫 SVG 測試
+- [x] 安裝 `github.com/srwiley/oksvg`
+- [x] 實作 SVG 解析 (透過 oksvg)
+- [x] 實作 SVG → 點陣圖渲染 (透過 rasterx)
+- [x] 支援自訂輸出尺寸 (SetTarget / calculateDimensions)
+- [x] 撰寫 SVG 測試 (渲染與縮放驗證)
 
 ### 5.5 自動格式選擇
 
-- [ ] 解析 Accept header
-- [ ] 根據瀏覽器支援選擇最佳格式
-- [ ] 實作格式優先級設定
-- [ ] 支援強制格式參數覆蓋
+- [x] 解析 Accept header (整合至 ParsedURL)
+- [x] 根據瀏覽器支援選擇最佳格式 (negotiateFormat)
+- [x] 實作格式優先級設定 (Filter > Accept > Ext > Default)
+- [x] 支援強制格式參數覆蓋 (Filters check)
 
 ### 5.6 智慧裁切
 
-- [ ] 研究臉部偵測方案
-- [ ] 整合臉部偵測庫
-- [ ] 實作基於臉部的智慧裁切
-- [ ] 實作 `smart` 參數支援
+- [x] 研究臉部偵測方案 (選擇 smartcrop)
+- [x] 整合臉部偵測庫 (muesli/smartcrop)
+- [x] 實作 Processor 智慧裁切邏輯
+- [x] 撰寫智慧裁切單元測試
+- [x] 實作基於臉部的智慧裁切 (使用 smartcrop 演算法)
+- [x] 實作 `smart` 參數支援 (Processor 整合)
 
 ### 5.7 Phase 5 測試驗證
 
-- [ ] 測試 AVIF 編解碼
-- [ ] 測試 JPEG XL 編解碼
-- [ ] 測試 HEIC 解碼
-- [ ] 測試 SVG 渲染
-- [ ] 測試自動格式選擇
-- [ ] 測試智慧裁切
+- [x] 測試 AVIF 編解碼
+- [x] 測試 JPEG XL 編解碼
+- [x] 測試 HEIC 解碼
+- [x] 測試 SVG 渲染
+- [x] 測試自動格式選擇
+- [x] 測試智慧裁切
 
 ---
 
 ## 部署與文件
 
 ### 文件撰寫 (docs/)
+
+#### 以下文件一率用繁體中文以及英文撰寫，相關流程圖以及圖表一率用繁體中文以及英文撰寫
 
 - [ ] 完善 README.md（含 Badges）
 - [ ] 建立 `docs/architecture.md` 系統架構說明
@@ -411,7 +481,7 @@ swagger:
 
 - [ ] 最終化 Dockerfile
 - [ ] 建立 docker-compose.yaml
-- [ ] 建立 docker-compose.prod.yaml
+  - [ ] to /deploy/docker-compose.yaml
 
 ### Kubernetes 部署 - Kustomize
 
@@ -428,7 +498,7 @@ swagger:
 
 ### Kubernetes 部署 - Helm Chart
 
-- [ ] 建立 `charts/images-filters/` Helm chart 目錄
+- [ ] 建立 `deploy/helm/images-filters/` Helm chart 目錄
 - [ ] 建立 Chart.yaml
 - [ ] 建立 values.yaml (預設值)
 - [ ] 建立 values-dev.yaml

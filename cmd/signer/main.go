@@ -57,6 +57,7 @@ func signCmd() {
 	keyPtr := signFlags.String("key", "", "Security key (or set IMG_SECURITY_KEY env)")
 	pathPtr := signFlags.String("path", "", "URL path to sign (e.g., 300x200/test.jpg)")
 	baseURLPtr := signFlags.String("base", "", "Base URL (optional, e.g., http://localhost:8080)")
+	quietPtr := signFlags.Bool("quiet", false, "Output only the signed path")
 
 	if err := signFlags.Parse(os.Args[2:]); err != nil {
 		fmt.Println("Error parsing arguments:", err)
@@ -85,6 +86,11 @@ func signCmd() {
 	signedPath := signer.SignURL(path)
 
 	// Output results
+	if *quietPtr {
+		fmt.Print(signedPath)
+		return
+	}
+
 	fmt.Println("Original path:", path)
 	fmt.Println("Signed path:  ", signedPath)
 

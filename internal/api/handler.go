@@ -49,6 +49,9 @@ func (h *Handler) HandleImage(c *gin.Context) {
 		return
 	}
 
+	// 設定 Accept Header 用於內容協商
+	parsedURL.AcceptHeader = c.Request.Header.Get("Accept")
+
 	// 處理圖片
 	imageData, contentType, err := h.imageService.ProcessImage(c.Request.Context(), parsedURL)
 	if err != nil {

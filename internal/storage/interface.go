@@ -4,6 +4,7 @@ package storage
 
 import (
 	"context"
+	"io"
 )
 
 // Storage 儲存介面
@@ -19,4 +20,10 @@ type Storage interface {
 
 	// Delete 刪除圖片
 	Delete(ctx context.Context, key string) error
+
+	// GetStream 取得圖片資料串流
+	GetStream(ctx context.Context, key string) (io.ReadCloser, error)
+
+	// PutStream 儲存圖片資料串流
+	PutStream(ctx context.Context, key string, r io.Reader) error
 }

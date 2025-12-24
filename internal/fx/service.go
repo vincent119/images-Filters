@@ -3,6 +3,7 @@ package fx
 import (
 	"go.uber.org/fx"
 
+	"github.com/vincent119/images-filters/internal/cache"
 	"github.com/vincent119/images-filters/internal/config"
 	"github.com/vincent119/images-filters/internal/metrics"
 	"github.com/vincent119/images-filters/internal/service"
@@ -20,6 +21,7 @@ type ServiceParams struct {
 
 	Config  *config.Config
 	Storage storage.Storage
+	Cache   cache.Cache
 	Metrics metrics.Metrics `optional:"true"`
 }
 
@@ -31,5 +33,5 @@ func NewImageService(params ServiceParams) service.ImageService {
 		opts = append(opts, service.WithMetrics(params.Metrics))
 	}
 
-	return service.NewImageService(params.Config, params.Storage, opts...)
+	return service.NewImageService(params.Config, params.Storage, params.Cache, opts...)
 }

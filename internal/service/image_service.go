@@ -5,9 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
+	"github.com/vincent119/images-filters/internal/cache"
 	"github.com/vincent119/images-filters/internal/config"
 	"github.com/vincent119/images-filters/internal/loader"
 	"github.com/vincent119/images-filters/internal/metrics"
@@ -24,10 +26,12 @@ type imageService struct {
 	processor *processor.Processor
 	metrics   metrics.Metrics
 	storage   storage.Storage
+	cache     cache.Cache
+	sem       chan struct{} // Semaphore for concurrency control
 }
 
 // NewImageService 建立圖片處理服務
-func NewImageService(cfg *config.Config, store storage.Storage, opts ...ServiceOption) ImageService {
+func NewImageService(cfg *config.Config, store storage.Storage, c cache.Cache, opts ...ServiceOption) ImageService {
 	// 處理選項
 	options := &serviceOptions{}
 	for _, opt := range opts {
@@ -59,12 +63,20 @@ func NewImageService(cfg *config.Config, store storage.Storage, opts ...ServiceO
 		logger.Int("max_height", cfg.Processing.MaxHeight),
 	)
 
+	// Initialize semaphore
+	workers := cfg.Processing.Workers
+	if workers < 1 {
+		workers = 1
+	}
+
 	return &imageService{
 		cfg:       cfg,
 		loader:    loaderFactory,
 		processor: proc,
 		metrics:   options.metrics,
 		storage:   store,
+		cache:     c,
+		sem:       make(chan struct{}, workers),
 	}
 }
 
@@ -79,44 +91,55 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		logger.Bool("fit_in", parsedURL.FitIn),
 	)
 
-	// 1. 檢查儲存是否存在 (Cache Hit)
+	// 1. 檢查快取 (Cache Hit)
 	resultKey := s.generateKey(parsedURL)
-	if data, err := s.storage.Get(ctx, resultKey); err == nil {
+	if data, err := s.cache.Get(ctx, resultKey); err == nil {
 		logger.Debug("cache hit", logger.String("key", resultKey))
-
-		// 判斷 Content-Type
-		// 這裡假設我們只存圖片，且可以從 key 或內容推斷
-		// 為簡化，我們重新使用 determineFormat 推斷 ContentType，或者儲存 metadata
-		// 簡單起見，我們再次依賴 determineFormat (雖然可能不精確如果 format 被改了)
-		// 更好的方式是儲存 metadata，但在 key 中包含 format 即可
 		format := s.determineFormat(parsedURL)
 		return data, processor.GetContentType(format), nil
 	}
 
-	// 2. 載入圖片 (Source)
-	var imageData []byte
+	// 2. 檢查持久化儲存 (Persistent Cache)
+	if data, err := s.storage.Get(ctx, resultKey); err == nil {
+		logger.Debug("storage hit", logger.String("key", resultKey))
+		format := s.determineFormat(parsedURL)
+		// 回寫快取 (Cache Miss but Storage Hit)
+		// 使用預設 TTL (0 表示使用實作層的預設值)
+		if err := s.cache.Set(ctx, resultKey, data, 0); err != nil {
+			logger.Warn("failed to set cache", logger.Err(err))
+		}
+		return data, processor.GetContentType(format), nil
+	}
+
+	// 3. 限制並發處理 (Worker Pool)
+	// 僅針對 Cache Miss 的請求進行限制
+	select {
+	case s.sem <- struct{}{}:
+		defer func() { <-s.sem }()
+	case <-ctx.Done():
+		return nil, "", ctx.Err()
+	}
+
+	// 4. 載入圖片 (Source)
+	var imageReader io.ReadCloser
 	var err error
 
 	// 如果是 HTTP URL，使用 Loader
 	if strings.HasPrefix(parsedURL.ImagePath, "http") {
-		imageData, err = s.loader.Load(ctx, parsedURL.ImagePath)
+		imageReader, err = s.loader.LoadStream(ctx, parsedURL.ImagePath)
 	} else {
 		// 嘗試從 Storage 讀取 (Source)
-		// 注意: MixedStorage.Get 會先查 Result，再查 Source
-		// 這裡我們直接查原始路徑
-		imageData, err = s.storage.Get(ctx, parsedURL.ImagePath)
+		imageReader, err = s.storage.GetStream(ctx, parsedURL.ImagePath)
 
-		// 如果 Storage 找不到 (例如 LocalStorage 沒設好或其實在 Loader 路徑)
-		// fallback 到 file loader (如果 configured root path matches)
-		// 但這會變複雜。簡單起見，若 storage 失敗則嘗試 loader
+		// 如果 Storage 找不到，嘗試 loader fallback
 		if err != nil {
-			logger.Debug("storage load failed, falling back to loader", logger.Err(err))
-			imageData, err = s.loader.Load(ctx, parsedURL.ImagePath)
+			logger.Debug("storage load stream failed, falling back to loader", logger.Err(err))
+			imageReader, err = s.loader.LoadStream(ctx, parsedURL.ImagePath)
 		}
 	}
 
 	if err != nil {
-		logger.Warn("failed to load image",
+		logger.Warn("failed to load image stream",
 			logger.String("image_path", parsedURL.ImagePath),
 			logger.Err(err),
 		)
@@ -126,10 +149,10 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		}
 		return nil, "", fmt.Errorf("failed to load image: %w", err)
 	}
+	defer imageReader.Close()
 
-	logger.Debug("image loaded successfully",
+	logger.Debug("image stream loaded successfully",
 		logger.String("image_path", parsedURL.ImagePath),
-		logger.Int("size_bytes", len(imageData)),
 	)
 
 	// 2. 建立處理選項
@@ -149,7 +172,8 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 	}
 
 	// 3. 處理圖片
-	processedImage, err := s.processor.Process(imageData, opts)
+	// Processor.Process now accepts io.Reader
+	processedImage, err := s.processor.Process(imageReader, opts)
 	if err != nil {
 		logger.Error("failed to process image",
 			logger.String("image_path", parsedURL.ImagePath),
@@ -184,14 +208,18 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		s.metrics.RecordImageProcessed(opts.Format, int64(len(outputData)))
 	}
 
-	// 7. 儲存結果
-	// 非同步寫入儲存，避免阻塞回應
+	// 7. 儲存結果 (Async)
 	go func() {
+		// 寫入儲存
 		if err := s.storage.Put(context.Background(), resultKey, outputData); err != nil {
 			logger.Warn("failed to save image to storage",
 				logger.String("key", resultKey),
 				logger.Err(err),
 			)
+		}
+		// 寫入快取
+		if err := s.cache.Set(context.Background(), resultKey, outputData, 0); err != nil {
+			logger.Warn("failed to set cache", logger.String("key", resultKey), logger.Err(err))
 		}
 	}()
 
@@ -214,16 +242,45 @@ func (s *imageService) determineFormat(parsedURL *parser.ParsedURL) string {
 		}
 	}
 
-	// 從圖片路徑推斷格式
+	// 從圖片路徑推斷格式（優先級 3）
 	ext := strings.ToLower(filepath.Ext(parsedURL.ImagePath))
 	ext = strings.TrimPrefix(ext, ".")
+
+	// 內容協商 (Content Negotiation) (優先級 2)
+	// 如果沒有強制指定 filter，且 URL 副檔名不是強制性的 (某些情況下我們希望保留原擴展名行為，
+	// 但通常為了優化體驗，我們允許自動切換為更佳格式，除非使用者特意指定了 format filter)
+	// 這裡策略：只要沒有顯式指定 format filter，我們就嘗試協商
+	if negotiation := s.negotiateFormat(parsedURL.AcceptHeader); negotiation != "" {
+		return negotiation
+	}
 
 	if isValidFormat(ext) {
 		return normalizeFormat(ext)
 	}
 
-	// 使用預設格式
+	// 使用預設格式 (優先級 4)
 	return s.cfg.Processing.DefaultFormat
+}
+
+// negotiateFormat 根據 Accept 標頭協商最佳格式
+func (s *imageService) negotiateFormat(acceptHeader string) string {
+	if acceptHeader == "" {
+		return ""
+	}
+
+	// 簡單的字串匹配，優先級 AVIF > JXL > WebP
+	// 注意：這裡不解析 q-value，僅做存在性檢查，符合大多數 CDN/Server 實作
+	if strings.Contains(acceptHeader, "image/avif") {
+		return "avif"
+	}
+	if strings.Contains(acceptHeader, "image/jxl") {
+		return "jxl"
+	}
+	if strings.Contains(acceptHeader, "image/webp") {
+		return "webp"
+	}
+
+	return ""
 }
 
 // normalizeFormat 標準化格式名稱

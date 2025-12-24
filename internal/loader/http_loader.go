@@ -69,9 +69,39 @@ func (l *HTTPLoader) CanLoad(source string) bool {
 
 // Load 從 HTTP/HTTPS 載入圖片
 func (l *HTTPLoader) Load(ctx context.Context, source string) ([]byte, error) {
-	logger.Debug("HTTP loader starting",
+	rc, err := l.LoadStream(ctx, source)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+
+	var reader io.Reader = rc
+	if l.maxSize > 0 {
+		reader = io.LimitReader(rc, l.maxSize+1) // +1 用於偵測超過限制
+	}
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		logger.Debug("failed to read response", logger.Err(err))
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if l.maxSize > 0 && int64(len(data)) > l.maxSize {
+		return nil, fmt.Errorf("file too large: exceeds %d bytes limit", l.maxSize)
+	}
+
+	logger.Debug("HTTP load successful",
 		logger.String("url", source),
-		logger.Int64("max_size", l.maxSize),
+		logger.Int("size", len(data)),
+	)
+
+	return data, nil
+}
+
+// LoadStream 從 HTTP/HTTPS 載入圖片串流
+func (l *HTTPLoader) LoadStream(ctx context.Context, source string) (io.ReadCloser, error) {
+	logger.Debug("HTTP loader stream starting",
+		logger.String("url", source),
 	)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source, nil)
@@ -90,9 +120,9 @@ func (l *HTTPLoader) Load(ctx context.Context, source string) ([]byte, error) {
 		)
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
 		logger.Debug("HTTP response status error",
 			logger.String("url", source),
 			logger.Int("status", resp.StatusCode),
@@ -102,6 +132,7 @@ func (l *HTTPLoader) Load(ctx context.Context, source string) ([]byte, error) {
 
 	// 檢查 Content-Length
 	if l.maxSize > 0 && resp.ContentLength > l.maxSize {
+		resp.Body.Close()
 		logger.Debug("file too large",
 			logger.Int64("content_length", resp.ContentLength),
 			logger.Int64("max_size", l.maxSize),
@@ -112,35 +143,14 @@ func (l *HTTPLoader) Load(ctx context.Context, source string) ([]byte, error) {
 	// 驗證 Content-Type
 	contentType := resp.Header.Get("Content-Type")
 	if !isValidImageContentType(contentType) {
+		resp.Body.Close()
 		logger.Debug("invalid Content-Type",
 			logger.String("content_type", contentType),
 		)
 		return nil, fmt.Errorf("invalid Content-Type: %s", contentType)
 	}
 
-	// 讀取回應
-	var reader io.Reader = resp.Body
-	if l.maxSize > 0 {
-		reader = io.LimitReader(resp.Body, l.maxSize+1) // +1 用於偵測超過限制
-	}
-
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		logger.Debug("failed to read response", logger.Err(err))
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if l.maxSize > 0 && int64(len(data)) > l.maxSize {
-		return nil, fmt.Errorf("file too large: exceeds %d bytes limit", l.maxSize)
-	}
-
-	logger.Debug("HTTP load successful",
-		logger.String("url", source),
-		logger.Int("size", len(data)),
-		logger.String("content_type", contentType),
-	)
-
-	return data, nil
+	return resp.Body, nil
 }
 
 // isValidImageContentType 檢查是否為有效的圖片 Content-Type

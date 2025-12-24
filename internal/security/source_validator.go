@@ -85,8 +85,8 @@ func matchPattern(pattern, host string) bool {
 	pattern = strings.ToLower(pattern)
 	host = strings.ToLower(host)
 
-	// 完全匹配
-	if pattern == host {
+	// 完全匹配或全域萬用字元
+	if pattern == host || pattern == "*" {
 		return true
 	}
 

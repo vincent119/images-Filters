@@ -3,6 +3,7 @@ package loader
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,6 +54,22 @@ func (l *FileLoader) CanLoad(source string) bool {
 
 // Load 從本地檔案系統載入圖片
 func (l *FileLoader) Load(ctx context.Context, source string) ([]byte, error) {
+	rc, err := l.LoadStream(ctx, source)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+
+	data, err := io.ReadAll(rc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	return data, nil
+}
+
+// LoadStream 從本地檔案系統載入圖片串流
+func (l *FileLoader) LoadStream(ctx context.Context, source string) (io.ReadCloser, error) {
 	// 建立完整路徑
 	fullPath := l.resolvePath(source)
 
@@ -61,7 +78,7 @@ func (l *FileLoader) Load(ctx context.Context, source string) ([]byte, error) {
 		return nil, err
 	}
 
-	// 檢查檔案是否存在
+	// 檢查檔案是否存在與狀態
 	info, err := os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -80,13 +97,13 @@ func (l *FileLoader) Load(ctx context.Context, source string) ([]byte, error) {
 		return nil, fmt.Errorf("file too large: %d bytes (limit: %d)", info.Size(), l.maxSize)
 	}
 
-	// 讀取檔案
-	data, err := os.ReadFile(fullPath)
+	// 開啟檔案
+	f, err := os.Open(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 
-	return data, nil
+	return f, nil
 }
 
 // resolvePath 解析完整路徑

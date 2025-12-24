@@ -159,3 +159,59 @@ func (s *S3Storage) Delete(ctx context.Context, key string) error {
 
 	return nil
 }
+
+// GetStream retrieves image data as stream from S3
+func (s *S3Storage) GetStream(ctx context.Context, key string) (io.ReadCloser, error) {
+	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		var noKey *types.NoSuchKey
+		if errors.As(err, &noKey) {
+			return nil, fmt.Errorf("file not found: %s", key)
+		}
+		// S3 SDK v2 error handling for 404
+		var responseError interface {
+			HTTPStatusCode() int
+		}
+		if errors.As(err, &responseError) {
+			if responseError.HTTPStatusCode() == 404 {
+				return nil, fmt.Errorf("file not found: %s", key)
+			}
+		}
+		return nil, fmt.Errorf("failed to get object stream from s3: %w", err)
+	}
+
+	return output.Body, nil
+}
+
+// PutStream saves image data stream to S3
+func (s *S3Storage) PutStream(ctx context.Context, key string, r io.Reader) error {
+	// For S3 PutObject with io.Reader, we might need to know the length or let SDK handle it (it might buffer if Seek is not supported)
+	// But let's rely on SDK defaults. DetectContentType might not work with stream unless we peek.
+	// For efficiency, we might skip detection or use default.
+	// Or we can peek first 512 bytes.
+
+	// Peek logic (optional, for robustness)
+	// buf := make([]byte, 512)
+	// n, _ := io.ReadFull(r, buf)
+	// contentType := http.DetectContentType(buf[:n])
+	// But this consumes the reader. We need to rebuild it.
+	// io.MultiReader(bytes.NewReader(buf[:n]), r)
+
+	// Simple version: application/octet-stream if unknown.
+	contentType := "application/octet-stream"
+
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		Body:        r,
+		ContentType: aws.String(contentType),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to put object stream to s3: %w", err)
+	}
+
+	return nil
+}

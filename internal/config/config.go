@@ -5,6 +5,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -180,6 +181,17 @@ func Load(configPath string) (*Config, error) {
 		return nil, err
 	}
 
+	f, _ := os.OpenFile("/tmp/config_debug.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if f != nil {
+		fmt.Fprintf(f, "DEBUG CONFIG: Security=%+v\n", cfg.Security)
+		val, ok := os.LookupEnv("IMG_SECURITY_ALLOW_UNSAFE")
+		fmt.Fprintf(f, "DEBUG ENV: IMG_SECURITY_ALLOW_UNSAFE=%s (exists=%v)\n", val, ok)
+		val2, ok2 := os.LookupEnv("IMG_SECURITY_ALLOWED_SOURCES")
+		fmt.Fprintf(f, "DEBUG ENV: IMG_SECURITY_ALLOWED_SOURCES=%s (exists=%v)\n", val2, ok2)
+		fmt.Fprintf(f, "DEBUG ALLOWED SOURCES: %v (len=%d)\n", cfg.Security.AllowedSources, len(cfg.Security.AllowedSources))
+		f.Close()
+	}
+
 	return &cfg, nil
 }
 
@@ -245,6 +257,8 @@ func setDefaults(v *viper.Viper) {
 	// Security 預設值
 	v.SetDefault("security.enabled", false)
 	v.SetDefault("security.allow_unsafe", true)
+	v.SetDefault("security.security_key", "")
+	v.SetDefault("security.allowed_sources", []string{})
 	v.SetDefault("security.max_width", 4096)
 	v.SetDefault("security.max_height", 4096)
 

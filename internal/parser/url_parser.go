@@ -35,6 +35,9 @@ type ParsedURL struct {
 
 	// 圖片來源
 	ImagePath string // 原始圖片路徑或 URL
+
+	// 內容協商
+	AcceptHeader string // 客戶端 Accept 標頭
 }
 
 // Filter 濾鏡參數

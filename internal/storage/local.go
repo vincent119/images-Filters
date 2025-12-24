@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -95,4 +96,44 @@ func (s *LocalStorage) resolvePath(key string) string {
 	cleanKey = strings.TrimPrefix(cleanKey, "\\")
 
 	return filepath.Join(s.rootPath, cleanKey)
+}
+
+// GetStream 取得圖片資料串流
+func (s *LocalStorage) GetStream(ctx context.Context, key string) (io.ReadCloser, error) {
+	path := s.resolvePath(key)
+
+	f, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("file not found: %s", key)
+		}
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+
+	return f, nil
+}
+
+// PutStream 儲存圖片資料串流
+func (s *LocalStorage) PutStream(ctx context.Context, key string, r io.Reader) error {
+	path := s.resolvePath(key)
+
+	// 確保目錄存在
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	// 建立檔案
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer f.Close()
+
+	// 寫入資料
+	if _, err := io.Copy(f, r); err != nil {
+		return fmt.Errorf("failed to write stream to file: %w", err)
+	}
+
+	return nil
 }
