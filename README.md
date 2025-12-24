@@ -1,170 +1,108 @@
-# Images Filters
+# Images Filters Image Processing Service
 
-[![Go Version](https://img.shields.io/badge/Go-1.23-blue.svg)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/Go-1.25.5-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](link)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](link)
+[![Build Status](https://github.com/vincent119/images-filters/actions/workflows/go.yml/badge.svg)](https://github.com/vincent119/images-filters/actions/workflows/go.yml)
+[![Coverage Status](https://coveralls.io/repos/github/vincent119/images-filters/badge.svg?branch=main)](https://coveralls.io/github/vincent119/images-filters?branch=main)
+[![Go Report Card](https://goreportcard.com/badge/github.com/vincent119/images-filters)](https://goreportcard.com/report/github.com/vincent119/images-filters)
 
-高效能圖片處理服務器，支援即時 resize、crop、flip、filters 和 watermark，參考 [Thumbor](https://github.com/thumbor/thumbor) 設計理念。
+[繁體中文](README_TW.md)
 
-## ✨ 功能特點
+A high-performance image processing server supporting real-time resizing, cropping, flipping, filters, and watermarking. Optimized for speed and extensibility.
 
-- 🖼️ **圖片處理**：Resize、Crop、Flip、Rotate
-- 🎨 **濾鏡效果**：Blur、Grayscale、Brightness、Contrast、Sharpen 等
-- 💧 **浮水印**：支援圖片浮水印，可調整位置與透明度
-- 🔒 **安全機制**：HMAC URL 簽名防止篡改
-- 📦 **多種儲存**：本地、AWS S3、混合模式
-- ⚡ **高效能**：Redis 快取、Worker Pool
-- 📊 **監控**：Prometheus 指標
+## ✨ Features
 
-## 📸 支援的圖片格式
+- 🖼️ **Image Processing**: Real-time Resize, Crop, Flip, Rotate, Format Conversion.
+- 🎨 **Filters**: Blur, Grayscale, Brightness, Contrast, Sharpen, and more.
+- 💧 **Watermark**: Support image watermarks with adjustable position and opacity.
+- 🔒 **Security**: HMAC-SHA256 URL signing to prevent tampering.
+- 📦 **Multiple Storage**: Local filesystem, AWS S3, and Mixed mode (local cache + remote source).
+- ⚡ **High Performance**: Built-in Redis cache, Worker Pool processing, and Go concurrency.
+- 📊 **Observability**: Prometheus metrics, Grafana dashboards, and structured logging.
+- 🐳 **Cloud Native**: Docker images, Helm charts, and Kustomize deployment ready.
 
-| 格式 | 讀取 | 寫入 | 備註 |
-| ------ | :----: | :----: | ------ |
-| JPEG | ✅ | ✅ | 最常用格式 |
-| PNG | ✅ | ✅ | 支援透明 |
-| WebP | ✅ | ✅ | 現代瀏覽器推薦 |
-| AVIF | ✅ | ✅ | 2024 新格式 |
-| JPEG XL | ✅ | ✅ | 未來趨勢 |
-| GIF | ✅ | ✅ | 支援動畫 |
-| HEIC | ✅ | ❌ | Apple 格式 |
-| SVG | ✅ | ❌ | 向量圖轉換 |
+## 🚀 Quick Start
 
-## 🚀 快速開始
-
-### 安裝
+### Installation
 
 ```bash
-# Clone 專案
+# Clone repository
 git clone https://github.com/vincent119/images-filters.git
 cd images-filters
 
-# 安裝依賴
+# Install dependencies
 go mod tidy
 
-# 執行
+# Run server
 make run
 ```
 
 ### Docker
 
 ```bash
-# 建置映像
-make docker-build
-
-# 執行容器
-docker run -p 8080:8080 images-filters:latest
+# Run with Docker
+docker run -p 8080:8080 vincent119/images-filters:latest
 ```
 
-## 📖 使用方式
+## 📖 Usage
 
-### URL 格式
+### URL Format
 
 ```bash
 http://<server>/<signature>/<options>/<filters>/<image_path>
 ```
 
-### 範例
+### Examples
 
 ```bash
-# Resize 到 300x200
+# Resize to 300x200 (Unsafe mode)
 http://localhost:8080/unsafe/300x200/https%3A%2F%2Fexample.com%2Fimage.jpg
 
-# 套用灰階濾鏡
+# Apply Grayscale filter
 http://localhost:8080/unsafe/300x200/filters:grayscale()/https%3A%2F%2Fexample.com%2Fimage.jpg
 
-# 水平翻轉 + 模糊
-http://localhost:8080/unsafe/-300x200/filters:blur(5)/https%3A%2F%2Fexample.com%2Fimage.jpg
+# Signed URL (Production)
+http://localhost:8080/H9a8s.../300x200/image.jpg
 ```
 
-## 🔒 安全機制
+For more details, please refer to the [Documentation](docs/README.md).
 
-### HMAC URL 簽名
+---
 
-啟用安全機制後，所有圖片處理請求都需要有效的 HMAC-SHA256 簽名。
+## 📚 Documentation
 
-```yaml
-# config/config.yaml
-security:
-  enabled: true
-  security_key: "your-secret-key-min-16-chars"
-  allow_unsafe: false  # 生產環境建議關閉
-```
+### Core Docs
 
-### URL 格式
+- [Architecture](docs/architecture.md)
+- [API Specification](docs/api.md)
+- [Security Design](docs/security.md)
+- [Configuration](docs/configuration.md)
+
+### Advanced Guides
+
+- [Image Pipeline](docs/image-pipeline.md)
+- [Cache Strategy](docs/cache-strategy.md)
+- [Observability](docs/observability.md)
+- [Performance](docs/performance.md)
+
+### Ops & Dev
+
+- [Deployment](docs/deployment.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Developer Guide](docs/dev-guide.md)
+- [Contributing](docs/contributing.md)
+
+## 🛠️ Development
 
 ```bash
-# 有簽名
-http://localhost:8080/{signature}/300x200/test.jpg
-
-# 開發模式（需 allow_unsafe: true）
-http://localhost:8080/unsafe/300x200/test.jpg
-```
-
-### 產生簽名
-
-```go
-import "github.com/vincent119/images-filters/internal/security"
-
-signer := security.NewSigner("your-secret-key")
-signedURL := signer.SignURL("300x200/filters:blur(5)/test.jpg")
-// 輸出: /{base64-signature}/300x200/filters:blur(5)/test.jpg
-```
-
-### CLI 簽名工具
-
-```bash
-# 編譯工具
-go build -o bin/signer ./cmd/signer
-
-# 產生簽名 URL
-./bin/signer sign -key "your-secret-key" -path "300x200/test.jpg"
-
-# 驗證簽名
-./bin/signer verify -key "your-secret-key" -url "/{signature}/300x200/test.jpg"
-
-# 使用環境變數
-export IMG_SECURITY_KEY="your-secret-key"
-./bin/signer sign -path "300x200/test.jpg"
-```
-
-
-## 🛠️ 開發
-
-```bash
-# 執行測試
+# Run tests
 make test
 
-# 執行 Lint
+# Lint code
 make lint
 
-# 格式化程式碼
-make fmt
-
-# 生成 Swagger 文檔
+# Generate Swagger
 make swagger
-```
-
-
-## 📁 專案結構
-
-```bash
-images-Filters/
-├── cmd/server/         # 應用程式入口
-├── internal/
-│   ├── api/            # HTTP 處理器
-│   ├── service/        # 業務邏輯層
-│   ├── processor/      # 圖片處理核心
-│   ├── filter/         # 濾鏡管線
-│   ├── loader/         # 圖片載入器
-│   ├── storage/        # 儲存層
-│   ├── security/       # 安全機制
-│   └── cache/          # 快取層
-├── pkg/                # 共用工具
-├── config/             # 設定檔
-├── docs/               # 文件
-├── deploy/             # 部署設定
-└── charts/             # Helm Charts
 ```
 
 ## 📝 License

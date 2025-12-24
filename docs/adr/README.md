@@ -1,13 +1,37 @@
-# 架構決策紀錄 (ADR)
+# Architecture Decision Records (ADR)
 
-此目錄存放專案的架構決策紀錄。
+[繁體中文](../../TW/adr/README.md)
 
-## ADR 格式
+## What is an ADR?
 
-每個 ADR 檔案應包含：
+An Architecture Decision Record (ADR) is a document that captures an important architectural decision made along with its context and consequences.
 
-1. **標題**：簡短描述決策
-2. **狀態**：Proposed / Accepted / Deprecated / Superseded
-3. **上下文**：為什麼需要做這個決策
-4. **決策**：我們決定怎麼做
-5. **後果**：這個決策帶來的影響
+### Template
+
+When adding a new ADR, please use the following template (file name format: `NNNN-title-in-kebab-case.md`):
+
+```markdown
+# NNNN. Title of the Decision
+
+- **Status**: [Proposed | Accepted | Superseded | Deprecated]
+- **Date**: YYYY-MM-DD
+- **Authors**: [Name]
+
+## Context
+Describe the problem or opportunity that motivates this decision. Explain the forces at play (technological, political, social, project local).
+
+## Decision
+Explain the decision being made. Use active voice ("We will...").
+
+## Consequences
+Describe the resulting context after applying this decision. All consequences should be listed here, not just the positive ones.
+- **Positive**: ...
+- **Negative**: ...
+- **Risks**: ...
+```
+
+### Index
+
+| ID   | Title                         | Status   | Date       |
+|------|-------------------------------|----------|------------|
+| 0001 | Record Architecture Decisions | Accepted | 2024-03-20 |

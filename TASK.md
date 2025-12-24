@@ -379,7 +379,6 @@ swagger:
 - [x] 實作圖片 buffer pool 使用率指標（如使用 sync.Pool）
 - [x] 實作服務啟動時間指標（uptime）
 
-
 #### 可觀測性整合
 
 - [x] 設計統一的 metrics 命名規則（避免 label 爆炸）
@@ -470,22 +469,32 @@ swagger:
 
 ### 6.1 文件撰寫（docs/）
 
-#### 以下文件一率用繁體中文以及英文撰寫，相關流程圖以及圖表一率用繁體中文以及英文撰寫
+#### 以下文件分為英文版本（docs/）與繁體中文版本（docs/TW/），並有 README.md (EN) 與 README_TW.md (TW)
 
-- [ ] 完善 README.md（含 Badges、專案簡介、快速開始、核心功能說明）
-- [ ] 建立 `docs/architecture.md` 系統架構說明（整體架構、元件職責、資料流向）
-- [ ] 建立 `docs/api.md` API 規格文件（Endpoint、Request/Response、錯誤碼）
-- [ ] 建立 `docs/adr/` ADR 目錄（Architecture Decision Record）
-- [ ] 建立 `docs/adr/README.md`（ADR 撰寫規範與範例）
-- [ ] 撰寫設定說明文件（環境變數、設定檔、預設值與影響）
-- [ ] 撰寫部署指南（Local、Docker、Production）
+- [x] 完善 README.md (EN) 與 README_TW.md (TW)（含 Badges、專案簡介、快速開始、核心功能說明、測試覆蓋率）
+- [x] 建立 docs/architecture.md & docs/TW/architecture.md 系統架構說明
+- [x] 建立 docs/api.md & docs/TW/api.md API 規格文件
+- [x] 建立 docs/adr/ & docs/TW/adr/ ADR 目錄
+- [x] 建立 docs/adr/README.md & docs/TW/adr/README.md
+- [x] 撰寫設定說明文件 (docs/configuration.md & docs/TW/configuration.md)
+- [x] 撰寫部署指南 (docs/deployment.md & docs/TW/deployment.md)
 
-- [ ] 建立 `docs/security.md`（安全設計與存取控制說明）
-- [ ] 建立 `docs/image-pipeline.md`（圖片處理流程說明）
-- [ ] 建立 `docs/cache-strategy.md`（快取策略與 CDN 設計）
-- [ ] 建立 `docs/observability.md`（監控、指標與告警）
-- [ ] 建立 `docs/troubleshooting.md`（常見問題與除錯指南）
-- [ ] 建立 `docs/limitations.md`（系統限制與使用注意事項）
+- [x] 建立 docs/security.md & docs/TW/security.md
+- [x] 建立 docs/image-pipeline.md & docs/TW/image-pipeline.md
+- [x] 建立 docs/cache-strategy.md & docs/TW/cache-strategy.md
+- [x] 建立 docs/observability.md & docs/TW/observability.md
+- [x] 建立 docs/troubleshooting.md & docs/TW/troubleshooting.md
+- [x] 建立 docs/limitations.md & docs/TW/limitations.md
+
+- [x] 建立 docs/performance.md & docs/TW/performance.md
+- [x] 建立 docs/rate-limit.md & docs/TW/rate-limit.md
+- [x] 建立 docs/error-handling.md & docs/TW/error-handling.md
+- [x] 建立 docs/versioning.md & docs/TW/versioning.md
+- [x] 建立 docs/deprecation.md & docs/TW/deprecation.md
+- [x] 建立 docs/extensibility.md & docs/TW/extensibility.md
+- [x] 建立 docs/dev-guide.md & docs/TW/dev-guide.md
+- [x] 建立 docs/contributing.md & docs/TW/contributing.md
+- [x] 建立 docs/compliance.md & docs/TW/compliance.md
 
 ### 6.2 Docker 部署
 
