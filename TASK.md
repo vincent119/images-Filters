@@ -492,6 +492,7 @@ swagger:
 - [x] 最終化 Dockerfile
 - [x] 建立 docker-compose.yaml
   - [x] to /deploy/docker-compose.yaml
+- [x] 建立 .dockerignore
 
 ### 6.3 Kubernetes 部署 - Kustomize
 

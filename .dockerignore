@@ -1,0 +1,66 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 建置產物
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 測試與覆蓋率
+*.test
+*.out
+coverage.txt
+coverage.html
+*.prof
+
+# 文件與開發檔案
+docs/
+*.md
+!README.md
+Makefile
+TASK.md
+IMPLEMENTATION_PLAN.md
+
+# 本地設定與資料
+config/config.yaml
+config/*.local.yaml
+.env
+.env.*
+*.local
+
+# 暫存與日誌
+tmp/
+logs/
+*.log
+
+# 部署設定（建置時不需要）
+deploy/
+
+# 開發工具
+tools/
+scripts/
+example/
+
+# 模組快取
+vendor/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
