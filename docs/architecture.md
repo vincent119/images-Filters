@@ -12,19 +12,19 @@ graph TD
     LB -->|Distribute| Server[Images Filters Server]
 
     subgraph "Images Filters Server"
-        API[API Layer<br>(Gin Framework)]
-        Middleware[Middleware<br>(Auth/Metrics/Log)]
-        Service[Service Layer<br>(Business Logic)]
-        Processor[Image Processor<br>(Libvips/Imaging)]
-        Cache[Cache Layer<br>(Redis/Memory)]
-        Loader[Loader Layer<br>(Source Fetcher)]
+        API["API Layer<br>(Gin Framework)"]
+        Middleware["Middleware<br>(Auth/Metrics/Log)"]
+        Service["Service Layer<br>(Business Logic)"]
+        Processor["Image Processor<br>(Libvips/Imaging)"]
+        Cache["Cache Layer<br>(Redis/Memory)"]
+        Loader["Loader Layer<br>(Source Fetcher)"]
     end
 
     API --> Middleware
     Middleware --> Service
     Service --> Cache
     Cache -->|Miss| Loader
-    Loader -->|Fetch| Source[Image Source<br>(S3/Local)]
+    Loader -->|Fetch| Source["Image Source<br>(S3/Local)"]
     Service -->|Raw Image| Processor
     Processor -->|Processed Image| Service
     Service -->|Save| Cache

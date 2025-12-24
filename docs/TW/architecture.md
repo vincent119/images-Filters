@@ -12,19 +12,19 @@ graph TD
     LB -->|分發| Server[Images Filters 服務器]
 
     subgraph "Images Filters 服務器"
-        API[API 層<br>(Gin 框架)]
-        Middleware[中介軟體<br>(認證/監控/日誌)]
-        Service[服務層<br>(業務邏輯)]
-        Processor[圖片處理核心<br>(Libvips/Imaging)]
-        Cache[快取層<br>(Redis/記憶體)]
-        Loader[載入層<br>(來源獲取)]
+        API["API 層<br>(Gin 框架)"]
+        Middleware["中介軟體<br>(認證/監控/日誌)"]
+        Service["服務層<br>(業務邏輯)"]
+        Processor["圖片處理核心<br>(Libvips/Imaging)"]
+        Cache["快取層<br>(Redis/記憶體)"]
+        Loader["載入層<br>(來源獲取)"]
     end
 
     API --> Middleware
     Middleware --> Service
     Service --> Cache
     Cache -->|未命中| Loader
-    Loader -->|讀取| Source[圖片來源<br>(S3/本地)]
+    Loader -->|讀取| Source["圖片來源<br>(S3/本地)"]
     Service -->|原始圖片| Processor
     Processor -->|處理後圖片| Service
     Service -->|儲存| Cache
