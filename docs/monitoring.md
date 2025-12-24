@@ -30,25 +30,31 @@ scrape_configs:
 Monitor these 4 Golden Signals to ensure service health:
 
 ### 1. Latency
+
 - **Metric**: `imgfilter_http_request_duration_seconds_bucket`
 - **Goal**: 99% of requests < 500ms (P99).
 - **Query**:
+
   ```promql
   histogram_quantile(0.99, sum(rate(imgfilter_http_request_duration_seconds_bucket[5m])) by (le))
   ```
 
 ### 2. Traffic
+
 - **Metric**: `imgfilter_http_requests_total`
 - **Goal**: Monitor Request Per Second (RPS) trends.
 - **Query**:
+
   ```promql
   sum(rate(imgfilter_http_requests_total[5m]))
   ```
 
 ### 3. Errors (Availability)
+
 - **Metric**: `imgfilter_http_requests_total{status=~"5.."}`
 - **Goal**: Error rate < 0.1%.
 - **Query**:
+
   ```promql
   sum(rate(imgfilter_http_requests_total{status=~"5.."}[5m]))
   /
@@ -56,6 +62,7 @@ Monitor these 4 Golden Signals to ensure service health:
   ```
 
 ### 4. Saturation
+
 - **Metric**: Memory Usage, CPU Usage, Goroutines.
 - **Query (Goroutines)**: `go_goroutines`
 

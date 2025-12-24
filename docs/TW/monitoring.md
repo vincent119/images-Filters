@@ -30,25 +30,31 @@ scrape_configs:
 監控以下四個黃金訊號 (4 Golden Signals) 以確保服務健康：
 
 ### 1. 延遲 (Latency)
+
 - **指標**: `imgfilter_http_request_duration_seconds_bucket`
 - **目標**: 99% 的請求小於 500ms (P99)。
 - **查詢**:
+
   ```promql
   histogram_quantile(0.99, sum(rate(imgfilter_http_request_duration_seconds_bucket[5m])) by (le))
   ```
 
 ### 2. 流量 (Traffic)
+
 - **指標**: `imgfilter_http_requests_total`
 - **目標**: 監控每秒請求數 (RPS) 趨勢。
 - **查詢**:
+
   ```promql
   sum(rate(imgfilter_http_requests_total[5m]))
   ```
 
 ### 3. 錯誤率 (Errors/Availability)
+
 - **指標**: `imgfilter_http_requests_total{status=~"5.."}`
 - **目標**: 錯誤率 < 0.1%。
 - **查詢**:
+
   ```promql
   sum(rate(imgfilter_http_requests_total{status=~"5.."}[5m]))
   /
@@ -56,6 +62,7 @@ scrape_configs:
   ```
 
 ### 4. 飽和度 (Saturation)
+
 - **指標**: 記憶體使用量、CPU 使用率、Goroutine 數量。
 - **查詢 (Goroutines)**: `go_goroutines`
 
