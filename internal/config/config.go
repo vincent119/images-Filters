@@ -108,11 +108,34 @@ type CacheConfig struct {
 
 // RedisCacheConfig Redis 快取設定
 type RedisCacheConfig struct {
-	Host     string `mapstructure:"host" validate:"required_if=Type redis,omitempty,hostname|ip"`
-	Port     int    `mapstructure:"port" validate:"required_if=Type redis,omitempty,min=1,max=65535"`
-	Password string `mapstructure:"password"`
-	DB       int    `mapstructure:"db" validate:"omitempty,min=0,max=15"`
-	TTL      int    `mapstructure:"ttl" validate:"omitempty,min=1"`
+	Host     string          `mapstructure:"host" validate:"required_if=Type redis,omitempty,hostname|ip"`
+	Port     int             `mapstructure:"port" validate:"required_if=Type redis,omitempty,min=1,max=65535"`
+	Username string          `mapstructure:"username"` // Redis 6+ ACL 使用者名稱（空字串時使用 requirepass）
+	Password string          `mapstructure:"password"`
+	DB       int             `mapstructure:"db" validate:"omitempty,min=0,max=15"`
+	TTL      int             `mapstructure:"ttl" validate:"omitempty,min=1"`
+	Pool     RedisPoolConfig `mapstructure:"pool"` // 連線池設定
+	TLS      RedisTLSConfig  `mapstructure:"tls"`  // TLS 設定
+}
+
+// RedisPoolConfig Redis 連線池設定
+type RedisPoolConfig struct {
+	Size         int `mapstructure:"size" validate:"omitempty,min=1,max=1000"`          // 最大連線數
+	MinIdleConns int `mapstructure:"min_idle_conns" validate:"omitempty,min=0,max=100"` // 最小閒置連線數
+	MaxIdleConns int `mapstructure:"max_idle_conns" validate:"omitempty,min=0,max=100"` // 最大閒置連線數
+	Timeout      int `mapstructure:"timeout" validate:"omitempty,min=1"`                // 連線池超時（秒）
+	ConnTimeout  int `mapstructure:"conn_timeout" validate:"omitempty,min=1"`           // 連線超時（秒）
+	ReadTimeout  int `mapstructure:"read_timeout" validate:"omitempty,min=1"`           // 讀取超時（秒）
+	WriteTimeout int `mapstructure:"write_timeout" validate:"omitempty,min=1"`          // 寫入超時（秒）
+}
+
+// RedisTLSConfig Redis TLS 設定
+type RedisTLSConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`   // 啟用 TLS
+	Insecure bool   `mapstructure:"insecure"`  // 跳過證書驗證（不建議產環使用）
+	CAFile   string `mapstructure:"ca_file"`   // CA 證書檔案路徑
+	CertFile string `mapstructure:"cert_file"` // 客戶端證書檔案路徑
+	KeyFile  string `mapstructure:"key_file"`  // 客戶端金鑰檔案路徑
 }
 
 // MemoryCacheConfig 記憶體快取設定
@@ -273,6 +296,16 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("cache.redis.port", 6379)
 	v.SetDefault("cache.redis.db", 0)
 	v.SetDefault("cache.redis.ttl", 3600)
+	// 連線池預設值
+	v.SetDefault("cache.redis.pool.size", 10)           // 預設 10 個連線
+	v.SetDefault("cache.redis.pool.min_idle_conns", 2)  // 預設最小 2 個閒置連線
+	v.SetDefault("cache.redis.pool.max_idle_conns", 5)  // 預設最大 5 個閒置連線
+	v.SetDefault("cache.redis.pool.timeout", 4)         // 4 秒
+	v.SetDefault("cache.redis.pool.conn_timeout", 5)    // 5 秒
+	v.SetDefault("cache.redis.pool.read_timeout", 3)    // 3 秒
+	v.SetDefault("cache.redis.pool.write_timeout", 3)   // 3 秒
+	// TLS 預設值
+	v.SetDefault("cache.redis.tls.enabled", false)
 	v.SetDefault("cache.memory.max_size", 536870912) // 512MB
 	v.SetDefault("cache.memory.ttl", 3600)
 

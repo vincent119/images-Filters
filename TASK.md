@@ -299,6 +299,9 @@ swagger:
 - [x] 實作快取鍵生成策略
 - [x] 整合快取到處理流程
 - [x] 撰寫 Redis 快取測試
+- [x] connect pool
+- [x] TLS connection
+- [x] add redis Username if empty string use requirepass
 
 ### 4.2 記憶體快取
 
@@ -396,10 +399,10 @@ swagger:
 
 ### 4.6 Phase 4 測試驗證
 
-- [ ] 壓力測試 (wrk/ab)
-- [ ] 記憶體使用測試
-- [ ] 快取效能測試
-- [ ] 監控指標驗證
+- [x] 壓力測試 (wrk/ab)
+- [x] 記憶體使用測試
+- [x] 快取效能測試
+- [x] 監控指標驗證
 
 ---
 

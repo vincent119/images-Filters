@@ -2,7 +2,10 @@ package cache
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -20,10 +23,93 @@ type RedisCache struct {
 func NewRedisCache(cfg config.RedisCacheConfig) (*RedisCache, error) {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 
+	// 設定連線池參數
+	poolSize := cfg.Pool.Size
+	if poolSize == 0 {
+		poolSize = 10 // 預設 10 個連線
+	}
+
+	minIdleConns := cfg.Pool.MinIdleConns
+	if minIdleConns == 0 {
+		minIdleConns = 2 // 預設最小 2 個閒置連線
+	}
+
+	maxIdleConns := cfg.Pool.MaxIdleConns
+	if maxIdleConns == 0 {
+		maxIdleConns = 5 // 預設最大 5 個閒置連線
+	}
+
+	poolTimeout := time.Duration(cfg.Pool.Timeout) * time.Second
+	if poolTimeout == 0 {
+		poolTimeout = 4 * time.Second
+	}
+
+	connTimeout := time.Duration(cfg.Pool.ConnTimeout) * time.Second
+	if connTimeout == 0 {
+		connTimeout = 5 * time.Second
+	}
+
+	readTimeout := time.Duration(cfg.Pool.ReadTimeout) * time.Second
+	if readTimeout == 0 {
+		readTimeout = 3 * time.Second
+	}
+
+	writeTimeout := time.Duration(cfg.Pool.WriteTimeout) * time.Second
+	if writeTimeout == 0 {
+		writeTimeout = 3 * time.Second
+	}
+
+	// TLS 設定
+	var tlsConfig *tls.Config
+	if cfg.TLS.Enabled {
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: cfg.TLS.Insecure,
+		}
+
+		// 載入 CA 證書
+		if cfg.TLS.CAFile != "" {
+			caCert, err := os.ReadFile(cfg.TLS.CAFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read CA cert file: %w", err)
+			}
+			caCertPool := x509.NewCertPool()
+			if !caCertPool.AppendCertsFromPEM(caCert) {
+				return nil, fmt.Errorf("failed to parse CA cert")
+			}
+			tlsConfig.RootCAs = caCertPool
+		}
+
+		// 載入客戶端證書（如果有提供）
+		if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
+			cert, err := tls.LoadX509KeyPair(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load client cert/key: %w", err)
+			}
+			tlsConfig.Certificates = []tls.Certificate{cert}
+		}
+
+		logger.Info("redis TLS enabled",
+			logger.Bool("insecure", cfg.TLS.Insecure),
+			logger.String("ca_cert", cfg.TLS.CAFile),
+		)
+	}
+
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
+		Username: cfg.Username, // Redis 6+ ACL（空字串時使用 requirepass）
 		Password: cfg.Password,
 		DB:       cfg.DB,
+		// 連線池設定
+		PoolSize:     poolSize,
+		MinIdleConns: minIdleConns,
+		MaxIdleConns: maxIdleConns,
+		PoolTimeout:  poolTimeout,
+		// 超時設定
+		DialTimeout:  connTimeout,
+		ReadTimeout:  readTimeout,
+		WriteTimeout: writeTimeout,
+		// TLS 設定
+		TLSConfig: tlsConfig,
 	})
 
 	// 測試連線
@@ -42,6 +128,9 @@ func NewRedisCache(cfg config.RedisCacheConfig) (*RedisCache, error) {
 	logger.Info("redis cache initialized",
 		logger.String("addr", addr),
 		logger.Int("db", cfg.DB),
+		logger.Int("pool_size", poolSize),
+		logger.Int("min_idle_conns", minIdleConns),
+		logger.Int("max_idle_conns", maxIdleConns),
 	)
 
 	return &RedisCache{
