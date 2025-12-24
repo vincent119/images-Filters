@@ -1,0 +1,141 @@
+# Docker Compose 配置 - Images Filters 圖片處理服務
+# 使用方式: docker-compose -f deploy/docker-compose.yaml up -d
+
+version: "3.9"
+
+services:
+  # 圖片處理服務
+  images-filters:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: images-filters:latest
+    container_name: images-filters
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # 服務設定
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - SERVER_MODE=release
+      # 日誌設定
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
+      # Redis 快取設定（可選）
+      - CACHE_TYPE=redis
+      - CACHE_REDIS_HOST=redis
+      - CACHE_REDIS_PORT=6379
+      - CACHE_REDIS_DB=0
+      - CACHE_REDIS_TTL=3600
+      # 儲存設定
+      - STORAGE_TYPE=local
+      - STORAGE_LOCAL_ROOT_PATH=/app/data
+      # 處理設定
+      - PROCESSING_DEFAULT_QUALITY=85
+      - PROCESSING_MAX_WIDTH=4096
+      - PROCESSING_MAX_HEIGHT=4096
+      - PROCESSING_WORKERS=4
+      # 安全設定
+      - SECURITY_ENABLED=false
+      - SECURITY_ALLOW_UNSAFE=true
+      # Metrics 設定
+      - METRICS_ENABLED=true
+      - METRICS_PATH=/metrics
+    volumes:
+      # 本地儲存路徑
+      - images-data:/app/data
+      # 設定檔（可選）
+      # - ./config/config.yaml:/app/config/config.yaml:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - images-filters-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+
+  # Redis 快取服務
+  redis:
+    image: redis:7-alpine
+    container_name: images-filters-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - images-filters-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  # Prometheus 監控（可選）
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: images-filters-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    networks:
+      - images-filters-network
+    profiles:
+      - monitoring
+
+  # Grafana 視覺化（可選）
+  grafana:
+    image: grafana/grafana:latest
+    container_name: images-filters-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ../example/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/images-filters.json:ro
+    networks:
+      - images-filters-network
+    profiles:
+      - monitoring
+
+networks:
+  images-filters-network:
+    driver: bridge
+
+volumes:
+  images-data:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local

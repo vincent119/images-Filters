@@ -1,0 +1,27 @@
+# Prometheus 配置
+# 用於監控 Images Filters 服務
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # Prometheus 自身監控
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Images Filters 服務監控
+  - job_name: "images-filters"
+    static_configs:
+      - targets: ["images-filters:8080"]
+    metrics_path: /metrics
+    scrape_interval: 10s

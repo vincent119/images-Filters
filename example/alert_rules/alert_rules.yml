@@ -1,0 +1,163 @@
+# Images Filters 告警規則
+# 用於 Prometheus AlertManager
+
+groups:
+  - name: images_filters_alerts
+    rules:
+      # ======== HTTP 層告警 ========
+
+      # 高錯誤率告警 (>5%)
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(images_filters_http_requests_total{status_code=~"4xx|5xx"}[5m]))
+          /
+          sum(rate(images_filters_http_requests_total[5m]))
+          > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "圖片處理服務高錯誤率"
+          description: "過去 5 分鐘錯誤率超過 5%，目前為 {{ $value | printf \"%.2f\" }}%"
+
+      # 極高錯誤率告警 (>10%)
+      - alert: CriticalErrorRate
+        expr: |
+          sum(rate(images_filters_http_requests_total{status_code=~"4xx|5xx"}[5m]))
+          /
+          sum(rate(images_filters_http_requests_total[5m]))
+          > 0.10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "圖片處理服務極高錯誤率"
+          description: "過去 5 分鐘錯誤率超過 10%，目前為 {{ $value | printf \"%.2f\" }}%"
+
+      # P99 延遲過高 (>5s)
+      - alert: HighP99Latency
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(images_filters_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "圖片處理服務 P99 延遲過高"
+          description: "P99 延遲超過 5 秒，目前為 {{ $value | printf \"%.2f\" }} 秒"
+
+      # ======== 快取告警 ========
+
+      # 快取命中率下降 (<80%)
+      - alert: LowCacheHitRate
+        expr: |
+          sum(rate(images_filters_cache_hits_total[5m]))
+          /
+          (sum(rate(images_filters_cache_hits_total[5m])) + sum(rate(images_filters_cache_misses_total[5m])))
+          < 0.80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "快取命中率下降"
+          description: "快取命中率低於 80%，目前為 {{ $value | printf \"%.2f\" }}%"
+
+      # 快取極低命中率 (<50%)
+      - alert: CriticalCacheHitRate
+        expr: |
+          sum(rate(images_filters_cache_hits_total[5m]))
+          /
+          (sum(rate(images_filters_cache_hits_total[5m])) + sum(rate(images_filters_cache_misses_total[5m])))
+          < 0.50
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "快取命中率極低"
+          description: "快取命中率低於 50%，目前為 {{ $value | printf \"%.2f\" }}%"
+
+      # ======== 系統層告警 ========
+
+      # Goroutine 數量異常 (>1000)
+      - alert: HighGoroutineCount
+        expr: go_goroutines > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Goroutine 數量過多"
+          description: "Goroutine 數量超過 1000，目前為 {{ $value }}"
+
+      # Goroutine 數量極高 (>5000)
+      - alert: CriticalGoroutineCount
+        expr: go_goroutines > 5000
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Goroutine 數量極高"
+          description: "Goroutine 數量超過 5000，目前為 {{ $value }}，可能存在洩漏"
+
+      # ======== 安全告警 ========
+
+      # 簽名驗證失敗率過高
+      - alert: HighSignatureFailureRate
+        expr: |
+          sum(rate(images_filters_signature_validations_total{success="false"}[5m]))
+          /
+          sum(rate(images_filters_signature_validations_total[5m]))
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "簽名驗證失敗率過高"
+          description: "簽名驗證失敗率超過 10%，可能有惡意請求或配置問題"
+
+      # 大量被拒絕請求
+      - alert: HighRejectedRequests
+        expr: sum(rate(images_filters_rejected_requests_total[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "大量請求被拒絕"
+          description: "每秒被拒絕請求超過 10 個，目前為 {{ $value | printf \"%.2f\" }}/s"
+
+      # ======== 儲存層告警 ========
+
+      # 儲存錯誤
+      - alert: StorageErrors
+        expr: sum(rate(images_filters_storage_errors_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "儲存層發生錯誤"
+          description: "儲存操作錯誤率為 {{ $value | printf \"%.2f\" }}/s"
+
+      # 儲存延遲過高
+      - alert: HighStorageLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(images_filters_storage_latency_seconds_bucket[5m])) by (le, backend)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "儲存操作延遲過高"
+          description: "儲存 P95 延遲超過 2 秒"
+
+      # ======== 處理層告警 ========
+
+      # 圖片處理錯誤
+      - alert: ImageProcessingErrors
+        expr: sum(rate(images_filters_image_processing_errors_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "圖片處理錯誤頻繁"
+          description: "圖片處理錯誤率為 {{ $value | printf \"%.2f\" }}/s"

@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/vincent119/images-filters/internal/config"
+	"github.com/vincent119/images-filters/internal/metrics"
 	"github.com/vincent119/images-filters/internal/security"
 )
 
@@ -59,7 +60,7 @@ func RecoveryMiddleware() gin.HandlerFunc {
 
 // SecurityMiddleware 安全驗證中介層
 // 驗證 HMAC 簽名或允許 unsafe 路徑
-func SecurityMiddleware(cfg *config.SecurityConfig) gin.HandlerFunc {
+func SecurityMiddleware(cfg *config.SecurityConfig, m metrics.Metrics) gin.HandlerFunc {
 	var signer *security.Signer
 	if cfg.Enabled && cfg.SecurityKey != "" {
 		signer = security.NewSigner(cfg.SecurityKey)
@@ -87,6 +88,9 @@ func SecurityMiddleware(cfg *config.SecurityConfig) gin.HandlerFunc {
 				return
 			}
 			// 禁止 unsafe 路徑
+			if m != nil {
+				m.RecordRejectedRequest("unsafe_disabled")
+			}
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":   "FORBIDDEN",
 				"message": "Unsafe access is disabled",
@@ -97,6 +101,9 @@ func SecurityMiddleware(cfg *config.SecurityConfig) gin.HandlerFunc {
 
 		// 驗證 HMAC 簽名
 		if signer == nil {
+			if m != nil {
+				m.RecordRejectedRequest("config_error")
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "CONFIG_ERROR",
 				"message": "Security key not configured",
@@ -107,6 +114,10 @@ func SecurityMiddleware(cfg *config.SecurityConfig) gin.HandlerFunc {
 
 		signature, imagePath, ok := security.ExtractSignatureAndPath(path)
 		if !ok {
+			if m != nil {
+				m.RecordSignatureValidation(false)
+				m.RecordRejectedRequest("invalid_format")
+			}
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":   "INVALID_SIGNATURE",
 				"message": "Invalid URL format",
@@ -116,12 +127,21 @@ func SecurityMiddleware(cfg *config.SecurityConfig) gin.HandlerFunc {
 		}
 
 		if !signer.Verify(signature, imagePath) {
+			if m != nil {
+				m.RecordSignatureValidation(false)
+				m.RecordRejectedRequest("bad_signature")
+			}
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":   "INVALID_SIGNATURE",
 				"message": "Signature verification failed",
 			})
 			c.Abort()
 			return
+		}
+
+		// 簽名驗證成功
+		if m != nil {
+			m.RecordSignatureValidation(true)
 		}
 
 		c.Next()

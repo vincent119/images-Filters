@@ -8,6 +8,7 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/vincent119/images-filters/internal/cache"
 	"github.com/vincent119/images-filters/internal/config"
@@ -93,22 +94,38 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 
 	// 1. 檢查快取 (Cache Hit)
 	resultKey := s.generateKey(parsedURL)
+	cacheStart := time.Now()
 	if data, err := s.cache.Get(ctx, resultKey); err == nil {
 		logger.Debug("cache hit", logger.String("key", resultKey))
+		if s.metrics != nil {
+			s.metrics.RecordCacheHit("memory")
+			s.metrics.RecordCacheLatency("get", "memory", time.Since(cacheStart).Seconds())
+		}
 		format := s.determineFormat(parsedURL)
 		return data, processor.GetContentType(format), nil
 	}
+	if s.metrics != nil {
+		s.metrics.RecordCacheMiss("memory")
+		s.metrics.RecordCacheLatency("get", "memory", time.Since(cacheStart).Seconds())
+	}
 
 	// 2. 檢查持久化儲存 (Persistent Cache)
+	storageStart := time.Now()
 	if data, err := s.storage.Get(ctx, resultKey); err == nil {
 		logger.Debug("storage hit", logger.String("key", resultKey))
+		if s.metrics != nil {
+			s.metrics.RecordStorageOperation("local", "get")
+			s.metrics.RecordStorageLatency("local", "get", time.Since(storageStart).Seconds())
+		}
 		format := s.determineFormat(parsedURL)
 		// 回寫快取 (Cache Miss but Storage Hit)
-		// 使用預設 TTL (0 表示使用實作層的預設值)
 		if err := s.cache.Set(ctx, resultKey, data, 0); err != nil {
 			logger.Warn("failed to set cache", logger.Err(err))
 		}
 		return data, processor.GetContentType(format), nil
+	}
+	if s.metrics != nil {
+		s.metrics.RecordStorageLatency("local", "get", time.Since(storageStart).Seconds())
 	}
 
 	// 3. 限制並發處理 (Worker Pool)
@@ -155,7 +172,7 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		logger.String("image_path", parsedURL.ImagePath),
 	)
 
-	// 2. 建立處理選項
+	// 5. 建立處理選項
 	opts := processor.ProcessOptions{
 		Width:      parsedURL.Width,
 		Height:     parsedURL.Height,
@@ -171,30 +188,66 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		Format:     s.determineFormat(parsedURL),
 	}
 
-	// 3. 處理圖片
+	// 記錄處理操作類型
+	if s.metrics != nil {
+		if opts.Width > 0 || opts.Height > 0 {
+			s.metrics.RecordProcessingOperation("resize")
+		}
+		if opts.CropLeft > 0 || opts.CropTop > 0 || opts.CropRight > 0 || opts.CropBottom > 0 {
+			s.metrics.RecordProcessingOperation("crop")
+		}
+		if opts.FlipH {
+			s.metrics.RecordProcessingOperation("flip_h")
+		}
+		if opts.FlipV {
+			s.metrics.RecordProcessingOperation("flip_v")
+		}
+		if opts.Smart {
+			s.metrics.RecordProcessingOperation("smart_crop")
+		}
+		for _, f := range parsedURL.Filters {
+			s.metrics.RecordProcessingOperation(f.Name)
+		}
+	}
+
+	// 6. 處理圖片（含階段耗時計量）
+	decodeStart := time.Now()
 	// Processor.Process now accepts io.Reader
 	processedImage, err := s.processor.Process(imageReader, opts)
+	if s.metrics != nil {
+		s.metrics.RecordProcessingDuration("decode_transform", time.Since(decodeStart).Seconds())
+	}
 	if err != nil {
 		logger.Error("failed to process image",
 			logger.String("image_path", parsedURL.ImagePath),
 			logger.Err(err),
 		)
-		// 記錄錯誤指標
 		if s.metrics != nil {
+			s.metrics.RecordProcessingError("process_failed")
 			s.metrics.RecordError("process_error")
 		}
 		return nil, "", fmt.Errorf("failed to process image: %w", err)
 	}
 
-	// 4. 編碼輸出
+	// 記錄輸出圖片尺寸
+	if s.metrics != nil {
+		bounds := processedImage.Bounds()
+		s.metrics.RecordOutputImageSize(bounds.Dx(), bounds.Dy())
+	}
+
+	// 7. 編碼輸出
+	encodeStart := time.Now()
 	outputData, err := s.processor.Encode(processedImage, opts.Format, opts.Quality)
+	if s.metrics != nil {
+		s.metrics.RecordProcessingDuration("encode", time.Since(encodeStart).Seconds())
+	}
 	if err != nil {
 		logger.Error("failed to encode image",
 			logger.String("format", opts.Format),
 			logger.Err(err),
 		)
-		// 記錄錯誤指標
 		if s.metrics != nil {
+			s.metrics.RecordProcessingError("encode_failed")
 			s.metrics.RecordError("encode_error")
 		}
 		return nil, "", fmt.Errorf("failed to encode image: %w", err)

@@ -327,73 +327,72 @@ swagger:
 
 ### 4.5 Prometheus 監控
 
-- [ ] 安裝 prometheus client
-- [ ] 建立 `/metrics` 端點
-- [ ] 實作處理時間指標
-- [ ] 實作請求計數指標
+- [x] 安裝 prometheus client
+- [x] 建立 `/metrics` 端點
+- [x] 實作處理時間指標
 
 #### HTTP 入口層指標
 
-- [ ] 實作請求總數指標（依 method / route / status）
-- [ ] 實作請求處理時間指標（Histogram，P50/P95/P99）
-- [ ] 實作進行中請求數（inflight requests）
-- [ ] 實作請求大小指標（request bytes）
-- [ ] 實作回應大小指標（response bytes）
-- [ ] 實作錯誤率指標（4xx / 5xx 分類）
+- [x] 實作請求總數指標（依 method / route / status）
+- [x] 實作請求處理時間指標（Histogram，P50/P95/P99）
+- [x] 實作進行中請求數（inflight requests）
+- [x] 實作請求大小指標（request bytes）
+- [x] 實作回應大小指標（response bytes）
+- [x] 實作錯誤率指標（4xx / 5xx 分類）
 
 #### 圖片處理核心指標
 
-- [ ] 實作圖片處理總耗時指標
-- [ ] 拆分處理階段耗時（decode / transform / encode）
-- [ ] 實作圖片處理操作類型計數（resize / crop / flip / watermark / filter）
-- [ ] 實作圖片處理錯誤分類指標（decode_failed / unsupported / timeout / oom）
-- [ ] 實作輸入圖片尺寸分佈指標
-- [ ] 實作輸出圖片尺寸分佈指標
+- [x] 實作圖片處理總耗時指標
+- [x] 拆分處理階段耗時（decode / transform / encode）
+- [x] 實作圖片處理操作類型計數（resize / crop / flip / watermark / filter）
+- [x] 實作圖片處理錯誤分類指標（decode_failed / unsupported / timeout / oom）
+- [x] 實作輸入圖片尺寸分佈指標
+- [x] 實作輸出圖片尺寸分佈指標
 
 #### 快取（Cache）指標
 
-- [ ] 實作快取命中 / 未命中計數
-- [ ] 實作快取命中率指標
-- [ ] 實作快取讀取延遲指標
-- [ ] 實作快取寫入延遲指標
-- [ ] 實作快取淘汰（eviction）計數（若有 LRU / TTL）
+- [x] 實作快取命中 / 未命中計數
+- [x] 實作快取命中率指標
+- [x] 實作快取讀取延遲指標
+- [x] 實作快取寫入延遲指標
+- [x] 實作快取淘汰（eviction）計數（若有 LRU / TTL）
 
 #### 儲存後端（S3 / 本地 / 其他）
 
-- [ ] 實作儲存後端操作計數（get / put）
-- [ ] 實作儲存後端延遲指標
-- [ ] 實作儲存後端錯誤分類（timeout / not_found / permission）
-- [ ] 實作儲存後端重試次數指標
+- [x] 實作儲存後端操作計數（get / put）
+- [x] 實作儲存後端延遲指標
+- [x] 實作儲存後端錯誤分類（timeout / not_found / permission）
+- [x] 實作儲存後端重試次數指標
 
 #### 安全與風控
 
-- [ ] 實作請求簽名驗證成功 / 失敗計數
-- [ ] 實作被拒絕請求原因指標（bad_signature / expired / rate_limited）
-- [ ] 實作流量限制（Rate Limit）觸發次數指標
+- [x] 實作請求簽名驗證成功 / 失敗計數
+- [x] 實作被拒絕請求原因指標（bad_signature / expired / rate_limited）
+- [x] 實作流量限制（Rate Limit）觸發次數指標
 
 #### 系統與效能觀測
 
-- [ ] 启用 Go runtime 預設指標（GC / goroutines / memory）
-- [ ] 實作圖片 buffer pool 使用率指標（如使用 sync.Pool）
-- [ ] 實作服務啟動時間指標（uptime）
+- [x] 启用 Go runtime 預設指標（GC / goroutines / memory）
+- [x] 實作圖片 buffer pool 使用率指標（如使用 sync.Pool）
+- [x] 實作服務啟動時間指標（uptime）
 
 
 #### 可觀測性整合
 
-- [ ] 設計統一的 metrics 命名規則（避免 label 爆炸）
-- [ ] 製作 Prometheus Recording Rules（P95 / 錯誤率）
-- [ ] 建立 Grafana Dashboard（HTTP / 圖片處理 / Cache / Storage）
-- [ ] 設定 Alert 規則（高錯誤率 / 高延遲 / Cache 命中率下降）
+- [x] 設計統一的 metrics 命名規則（避免 label 爆炸）
+- [x] 製作 Prometheus Recording Rules（P95 / 錯誤率）
+- [x] 建立 Grafana Dashboard（HTTP / 圖片處理 / Cache / Storage）
+- [x] 設定 Alert 規則（高錯誤率 / 高延遲 / Cache 命中率下降）
 
 #### Grafana Dashboard JSON
 
-- [ ] 建立 Grafana Dashboard JSON
-  - [ ] 複製到 ./example/grafana-dashboard.json
+- [x] 建立 Grafana Dashboard JSON
+  - [x] 複製到 ./example/grafana-dashboard.json
 
 #### Alert Manager rules
 
-- [ ] 建立 Alert Manager rules
-  - [ ] 複製到 ./example/alert_rules/alert_rules.yml
+- [x] 建立 Alert Manager rules
+  - [x] 複製到 ./example/alert_rules/alert_rules.yml
 
 ### 4.6 Phase 4 測試驗證
 
@@ -464,9 +463,9 @@ swagger:
 
 ---
 
-## 部署與文件
+## 6 部署與文件
 
-### 文件撰寫 (docs/)
+### 6.1 文件撰寫 (docs/)
 
 #### 以下文件一率用繁體中文以及英文撰寫，相關流程圖以及圖表一率用繁體中文以及英文撰寫
 
@@ -477,20 +476,18 @@ swagger:
 - [ ] 撰寫設定說明文件
 - [ ] 撰寫部署指南
 
-### Docker 部署
+### 6.2 Docker 部署
 
-- [ ] 最終化 Dockerfile
-- [ ] 建立 docker-compose.yaml
-  - [ ] to /deploy/docker-compose.yaml
+- [x] 最終化 Dockerfile
+- [x] 建立 docker-compose.yaml
+  - [x] to /deploy/docker-compose.yaml
 
-### Kubernetes 部署 - Kustomize
+### 6.3 Kubernetes 部署 - Kustomize
 
 - [ ] 建立 `deploy/kustomize/base/` 目錄結構
 - [ ] 建立 base deployment.yaml
 - [ ] 建立 base service.yaml
 - [ ] 建立 base configmap.yaml
-- [ ] 建立 `deploy/kustomize/overlays/dev/` 開發環境
-- [ ] 建立 `deploy/kustomize/overlays/staging/` 測試環境
 - [ ] 建立 `deploy/kustomize/overlays/prod/` 生產環境
 - [ ] 設定環境變數與 Secret 參照
 - [ ] 建立 HPA (Horizontal Pod Autoscaler) 設定
@@ -501,8 +498,6 @@ swagger:
 - [ ] 建立 `deploy/helm/images-filters/` Helm chart 目錄
 - [ ] 建立 Chart.yaml
 - [ ] 建立 values.yaml (預設值)
-- [ ] 建立 values-dev.yaml
-- [ ] 建立 values-staging.yaml
 - [ ] 建立 values-prod.yaml
 - [ ] 建立 templates/deployment.yaml
 - [ ] 建立 templates/service.yaml
@@ -517,7 +512,7 @@ swagger:
 
 ---
 
-## 備註
+## 7 備註
 
 - ⭐ 標記為高優先級任務
 - 🚧 標記為進行中任務

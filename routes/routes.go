@@ -28,7 +28,7 @@ func Setup(engine *gin.Engine, imageService service.ImageService, cfg *config.Co
 	engine.Use(api.RecoveryMiddleware())
 
 	// 安全驗證中介層
-	engine.Use(api.SecurityMiddleware(&cfg.Security))
+	engine.Use(api.SecurityMiddleware(&cfg.Security, m))
 
 	// 來源白名單中介層
 	engine.Use(api.SourceValidatorMiddleware(cfg.Security.AllowedSources))

@@ -1,5 +1,5 @@
 # 建置階段
-FROM golang:1.23-bookworm AS builder
+FROM golang:1.25.5-bookworm AS builder
 
 # 安裝必要的建置工具和 libwebp
 RUN apt-get update && apt-get install -y --no-install-recommends \
