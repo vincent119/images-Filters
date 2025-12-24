@@ -18,6 +18,23 @@
 3. **簽名**: 使用金鑰對路徑計算 HMAC-SHA256 值。
 4. **編碼**: 將結果進行 Base64 URL-safe 編碼。
 
+#### 流程圖
+
+```mermaid
+sequenceDiagram
+    participant Client as 用戶端 (Client)
+    participant Server as 伺服器 (Server)
+
+    Client->>Client: 產生雜湊值<br>(參數 + 金鑰)
+    Client->>Server: 發送帶簽名的請求
+    Server->>Server: 計算雜湊值<br>(參數 + 金鑰)
+    alt 簽名相符
+        Server->>Client: 處理請求並回傳圖片
+    else 簽名不符/無效
+        Server->>Client: 403 Forbidden
+    end
+```
+
 #### 實作範例 (Go)
 
 ```go

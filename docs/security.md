@@ -18,6 +18,23 @@ To prevent attackers from requesting arbitrary image sizes and exhausting server
 3. **Sign**: Calculate HMAC-SHA256 of the path using the key.
 4. **Encode**: Base64 URL-safe encode the result.
 
+#### Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+
+    Client->>Client: Generate Hash<br>(Params + Key)
+    Client->>Server: Request with Signature
+    Server->>Server: Calculate Hash<br>(Params + Key)
+    alt Signature Matches
+        Server->>Client: Process Request & Return Image
+    else Signature Mismatch/Invalid
+        Server->>Client: 403 Forbidden
+    end
+```
+
 #### Implementation Example (Go)
 
 ```go
