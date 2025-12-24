@@ -495,6 +495,9 @@ swagger:
 - [x] 建立 docs/dev-guide.md & docs/TW/dev-guide.md
 - [x] 建立 docs/contributing.md & docs/TW/contributing.md
 - [x] 建立 docs/compliance.md & docs/TW/compliance.md
+- [ ] 建立 docs/monitoring.md & docs/TW/monitoring.md
+- [ ] 建立 docs/configuration.md & docs/TW/configuration.md
+- [ ] 建立 config/config.sample.yaml
 
 ### 6.2 Docker 部署
 

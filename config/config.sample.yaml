@@ -1,0 +1,105 @@
+# Images Filters Configuration Sample
+# Copy this file to config/config.yaml and adjust values as needed.
+
+# Server Configuration
+server:
+  host: "0.0.0.0"       # Listening host address
+  port: 8080           # Listening port
+  read_timeout: "30s"  # Request read timeout
+  write_timeout: "30s" # Response write timeout
+  max_request_size: 10485760 # Max request body size in bytes (10MB)
+
+# Image Processing Configuration
+processing:
+  default_quality: 85      # Default image quality (1-100)
+  max_width: 4096          # Max output width
+  max_height: 4096         # Max output height
+  workers: 4               # Number of concurrent processing workers
+  default_format: "jpeg"   # Default output format (jpeg, png, webp, etc.)
+
+# Security Configuration
+security:
+  enabled: false           # Enable HMAC signature verification
+  security_key: ""         # Secret key for HMAC (required if enabled is true)
+  allow_unsafe: true       # Allow /unsafe/... paths (set to false in production)
+  allowed_sources: []      # Whitelist of allowed image source domains (for http loader)
+  max_width: 4096          # Max allowed width request
+  max_height: 4096         # Max allowed height request
+
+# Storage Configuration
+# types: local, s3, mixed, no_storage
+storage:
+  type: "local"
+
+  # Local Storage Settings
+  local:
+    root_path: "./data/images" # Directory to store/load images
+
+  # AWS S3 Storage Settings
+  s3:
+    bucket: "my-bucket"
+    region: "us-east-1"
+    access_key: ""         # Leave empty to use IAM role
+    secret_key: ""         # Leave empty to use IAM role
+    endpoint: ""           # Optional custom endpoint
+
+  # Mixed Storage Settings (Source -> Result)
+  mixed:
+    source_storage: "s3"   # Where original images are loaded from
+    result_storage: "local" # Where processed images are saved
+
+# Cache Configuration
+# types: memory, redis
+cache:
+  enabled: false
+  type: "memory"
+
+  # In-Memory Cache Settings
+  memory:
+    max_size: 536870912    # Max memory usage in bytes (512MB)
+    ttl: 3600              # Cache TTL in seconds
+
+  # Redis Cache Settings
+  redis:
+    host: "localhost"
+    port: 6379
+    username: ""           # For Redis 6+ ACL
+    password: ""
+    db: 0
+    ttl: 3600
+    pool:
+      size: 10             # Max connections
+      min_idle_conns: 2
+      max_idle_conns: 5
+      timeout: 4           # Pool wait timeout (seconds)
+      conn_timeout: 5      # Connection timeout (seconds)
+      read_timeout: 3      # Read timeout (seconds)
+      write_timeout: 3     # Write timeout (seconds)
+    tls:
+      enabled: false
+      insecure: false      # Skip verification (not recommended for production)
+      ca_file: ""
+      cert_file: ""
+      key_file: ""
+
+# Logging Configuration
+logging:
+  level: "info"        # debug, info, warn, error
+  format: "json"       # json, text, console
+  output: "stdout"     # stdout, file
+  file_path: "./logs/app.log" # Required if output is 'file'
+
+# Metrics Configuration (Prometheus)
+metrics:
+  enabled: true
+  namespace: "imgfilter"
+  path: "/metrics"
+  username: ""         # Basic Auth username (optional)
+  password: ""         # Basic Auth password (optional)
+
+# Swagger Documentation Configuration
+swagger:
+  enabled: true
+  path: "/swagger"
+  username: ""         # Basic Auth username (optional)
+  password: ""         # Basic Auth password (optional)

@@ -1,65 +1,84 @@
-# Configuration Guide
+# 設定指南
 
 [English](../configuration.md)
 
 ## 概述
 
-Images Filters 使用 `config/config.yaml` 進行各項參數設定，並支援透過環境變數覆蓋設定值。
+Images Filters 使用階層式設定系統，由 `config/config.yaml` 控制。所有數值皆可透過環境變數覆蓋。
 優先順序為：環境變數 > 設定檔 > 預設值。
 
 ### 設定檔 (`config.yaml`)
+
+完整範例請參考 [`config/config.sample.yaml`](../../config/config.sample.yaml)。
 
 ```yaml
 server:
   host: "0.0.0.0"
   port: 8080
-  mode: "debug" # 運行模式：debug, release, test
-
-logging:
-  level: "info" # 日誌等級：debug, info, warn, error
-  format: "json" # 格式：json, text, console
-  output: "stdout" # 輸出：stdout, file
-  file_path: "./logs/app.log"
+  read_timeout: "30s"
+  write_timeout: "30s"
+  max_request_size: 10485760 # 10MB
 
 processing:
-  default_quality: 80 # 圖片預設品質
-  max_width: 5000 # 最大寬度限制
-  max_height: 5000 # 最大高度限制
-  workers: 4 # 處理圖片的 Worker 數量
+  default_quality: 85
+  max_width: 4096
+  max_height: 4096
+  workers: 4
+  default_format: "jpeg"
+
+security:
+  enabled: true
+  security_key: "your-secret-key"
+  allow_unsafe: false
+  allowed_sources: []
+
+storage:
+  type: "local" # local, s3, mixed
+  local:
+    root_path: "./data/images"
+  s3:
+    bucket: "my-bucket"
+    region: "us-east-1"
+    access_key: ""
+    secret_key: ""
 
 cache:
-  type: "redis" # 快取類型：memory, redis
+  enabled: true
+  type: "redis" # memory, redis
   memory:
-    max_size: 536870912 # 記憶體上限 (Bytes)
-    ttl: 3600 # 過期時間 (秒)
+    max_size: 536870912 # 512MB
+    ttl: 3600
   redis:
     host: "localhost"
     port: 6379
-    username: "" # ACL 使用者 (可選)
-    password: ""
-    db: 0
-    ttl: 3600
     pool:
-      size: 10 # 連線池大小
+      size: 10
       timeout: 4
-    tls:
-      enabled: false # 是否啟用 TLS
 
-security:
-  enabled: true # 是否啟用簽名驗證
-  security_key: "your-secret-key" # HMAC 簽名密鑰
-  allow_unsafe: false # 是否允許 /unsafe 路徑
+logging:
+  level: "info" # debug, info, warn, error
+  format: "json" # json, text, console
+  output: "stdout" # stdout, file
+
+metrics:
+  enabled: true
+  path: "/metrics"
+
+swagger:
+  enabled: true
+  path: "/swagger"
 ```
 
-### 環境變數 (Environment Variables)
+### 環境變數
 
-所有設定鍵值皆對應至環境變數。嵌套結構使用底線 `_` 分隔。
+所有設定鍵值皆對應至環境變數。陣列與巢狀物件使用底線 `_` 分隔，並加上前綴 `IMG_`。
 
 | 變數名稱 | 說明 | 預設值 |
 | ---------- | ------------- | --------- |
-| `SERVER_PORT` | 伺服器監聽埠 | `8080` |
-| `LOG_LEVEL` | 日誌等級 | `info` |
-| `CACHE_TYPE` | 快取後端 | `memory` |
-| `CACHE_REDIS_HOST` | Redis 主機 | `localhost` |
-| `SECURITY_ENABLED` | 啟用 HMAC 檢查 | `false` |
-| `SECURITY_KEY` | HMAC 密鑰 | `""` |
+| `IMG_SERVER_PORT` | 伺服器監聽埠號 | `8080` |
+| `IMG_LOGGING_LEVEL` | 日誌等級 | `info` |
+| `IMG_CACHE_TYPE` | 快取後端 | `memory` |
+| `IMG_CACHE_REDIS_HOST` | Redis 主機 | `localhost` |
+| `IMG_SECURITY_ENABLED` | 啟用 HMAC 簽名驗證 | `false` |
+| `IMG_SECURITY_KEY` | HMAC 金鑰 | `""` |
+| `IMG_STORAGE_TYPE` | 儲存後端 | `local` |

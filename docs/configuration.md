@@ -9,25 +9,41 @@ The precedence is: Environment Variables > Config File > Default Values.
 
 ### Configuration File (`config.yaml`)
 
+You can find a complete example in [`config/config.sample.yaml`](../config/config.sample.yaml).
+
 ```yaml
 server:
   host: "0.0.0.0"
   port: 8080
-  mode: "debug" # debug, release, test
-
-logging:
-  level: "info" # debug, info, warn, error
-  format: "json" # json, text, console
-  output: "stdout" # stdout, file
-  file_path: "./logs/app.log"
+  read_timeout: "30s"
+  write_timeout: "30s"
+  max_request_size: 10485760 # 10MB
 
 processing:
-  default_quality: 80
-  max_width: 5000
-  max_height: 5000
-  workers: 4 # Processing worker pool size
+  default_quality: 85
+  max_width: 4096
+  max_height: 4096
+  workers: 4
+  default_format: "jpeg"
+
+security:
+  enabled: true
+  security_key: "your-secret-key"
+  allow_unsafe: false
+  allowed_sources: []
+
+storage:
+  type: "local" # local, s3, mixed
+  local:
+    root_path: "./data/images"
+  s3:
+    bucket: "my-bucket"
+    region: "us-east-1"
+    access_key: ""
+    secret_key: ""
 
 cache:
+  enabled: true
   type: "redis" # memory, redis
   memory:
     max_size: 536870912 # 512MB
@@ -35,31 +51,34 @@ cache:
   redis:
     host: "localhost"
     port: 6379
-    username: ""
-    password: ""
-    db: 0
-    ttl: 3600
     pool:
       size: 10
       timeout: 4
-    tls:
-      enabled: false
 
-security:
+logging:
+  level: "info" # debug, info, warn, error
+  format: "json" # json, text, console
+  output: "stdout" # stdout, file
+
+metrics:
   enabled: true
-  security_key: "your-secret-key"
-  allow_unsafe: false
+  path: "/metrics"
+
+swagger:
+  enabled: true
+  path: "/swagger"
 ```
 
 ### Environment Variables
 
-All configuration keys map to environment variables. Arrays and nested objects use underscore `_` separators.
+All configuration keys map to environment variables. Arrays and nested objects use underscore `_` separators and the prefix `IMG_`.
 
 | Variable | Description | Default |
 | ---------- | ------------- | --------- |
-| `SERVER_PORT` | Server listening port | `8080` |
-| `LOG_LEVEL` | Log level | `info` |
-| `CACHE_TYPE` | Cache backend | `memory` |
-| `CACHE_REDIS_HOST` | Redis host | `localhost` |
-| `SECURITY_ENABLED` | Enable HMAC check | `false` |
-| `SECURITY_KEY` | Secret for HMAC | `""` |
+| `IMG_SERVER_PORT` | Server listening port | `8080` |
+| `IMG_LOGGING_LEVEL` | Log level | `info` |
+| `IMG_CACHE_TYPE` | Cache backend | `memory` |
+| `IMG_CACHE_REDIS_HOST` | Redis host | `localhost` |
+| `IMG_SECURITY_ENABLED` | Enable HMAC check | `false` |
+| `IMG_SECURITY_KEY` | Secret for HMAC | `""` |
+| `IMG_STORAGE_TYPE` | Storage backend | `local` |
