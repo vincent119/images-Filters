@@ -1,0 +1,31 @@
+🎉 Images Filters 圖片處理服務已部署！
+
+1. 取得應用程式 URL：
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "images-filters.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+  注意：LoadBalancer 可能需要幾分鐘才能配置完成
+  kubectl get svc --namespace {{ .Release.Namespace }} -w {{ include "images-filters.fullname" . }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "images-filters.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "使用 http://127.0.0.1:8080 訪問應用程式"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. 健康檢查端點：
+   /healthz
+
+3. Prometheus 指標端點：
+   {{ .Values.config.metrics.path }}
+
+4. 查看日誌：
+   kubectl logs -f -l app.kubernetes.io/name={{ include "images-filters.name" . }} --namespace {{ .Release.Namespace }}

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "images-filters.fullname" . }}-config
+  labels:
+    {{- include "images-filters.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.config.logging.level | quote }}
+  LOG_FORMAT: {{ .Values.config.logging.format | quote }}
+  CACHE_TYPE: {{ .Values.config.cache.type | quote }}
+  {{- if eq .Values.config.cache.type "redis" }}
+  CACHE_REDIS_HOST: {{ .Values.config.cache.redis.host | quote }}
+  CACHE_REDIS_PORT: {{ .Values.config.cache.redis.port | quote }}
+  {{- end }}
+  PROCESSING_DEFAULT_QUALITY: {{ .Values.config.processing.defaultQuality | quote }}
+  PROCESSING_MAX_WIDTH: {{ .Values.config.processing.maxWidth | quote }}
+  PROCESSING_MAX_HEIGHT: {{ .Values.config.processing.maxHeight | quote }}
+  PROCESSING_WORKERS: {{ .Values.config.processing.workers | quote }}
+  SECURITY_ENABLED: {{ .Values.config.security.enabled | quote }}
+  SECURITY_ALLOW_UNSAFE: {{ .Values.config.security.allowUnsafe | quote }}

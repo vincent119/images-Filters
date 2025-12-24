@@ -468,16 +468,24 @@ swagger:
 
 ## 6 部署與文件
 
-### 6.1 文件撰寫 (docs/)
+### 6.1 文件撰寫（docs/）
 
 #### 以下文件一率用繁體中文以及英文撰寫，相關流程圖以及圖表一率用繁體中文以及英文撰寫
 
-- [ ] 完善 README.md（含 Badges）
-- [ ] 建立 `docs/architecture.md` 系統架構說明
-- [ ] 建立 `docs/api.md` API 規格文件
-- [ ] 建立 `docs/adr/` ADR 目錄（設計決策紀錄）
-- [ ] 撰寫設定說明文件
-- [ ] 撰寫部署指南
+- [ ] 完善 README.md（含 Badges、專案簡介、快速開始、核心功能說明）
+- [ ] 建立 `docs/architecture.md` 系統架構說明（整體架構、元件職責、資料流向）
+- [ ] 建立 `docs/api.md` API 規格文件（Endpoint、Request/Response、錯誤碼）
+- [ ] 建立 `docs/adr/` ADR 目錄（Architecture Decision Record）
+- [ ] 建立 `docs/adr/README.md`（ADR 撰寫規範與範例）
+- [ ] 撰寫設定說明文件（環境變數、設定檔、預設值與影響）
+- [ ] 撰寫部署指南（Local、Docker、Production）
+
+- [ ] 建立 `docs/security.md`（安全設計與存取控制說明）
+- [ ] 建立 `docs/image-pipeline.md`（圖片處理流程說明）
+- [ ] 建立 `docs/cache-strategy.md`（快取策略與 CDN 設計）
+- [ ] 建立 `docs/observability.md`（監控、指標與告警）
+- [ ] 建立 `docs/troubleshooting.md`（常見問題與除錯指南）
+- [ ] 建立 `docs/limitations.md`（系統限制與使用注意事項）
 
 ### 6.2 Docker 部署
 
@@ -487,31 +495,31 @@ swagger:
 
 ### 6.3 Kubernetes 部署 - Kustomize
 
-- [ ] 建立 `deploy/kustomize/base/` 目錄結構
-- [ ] 建立 base deployment.yaml
-- [ ] 建立 base service.yaml
-- [ ] 建立 base configmap.yaml
-- [ ] 建立 `deploy/kustomize/overlays/prod/` 生產環境
-- [ ] 設定環境變數與 Secret 參照
-- [ ] 建立 HPA (Horizontal Pod Autoscaler) 設定
-- [ ] 建立 PDB (Pod Disruption Budget) 設定
+- [x] 建立 `deploy/kustomize/base/` 目錄結構
+- [x] 建立 base deployment.yaml
+- [x] 建立 base service.yaml
+- [x] 建立 base configmap.yaml
+- [x] 建立 `deploy/kustomize/overlays/prod/` 生產環境
+- [x] 設定環境變數與 Secret 參照
+- [x] 建立 HPA (Horizontal Pod Autoscaler) 設定
+- [x] 建立 PDB (Pod Disruption Budget) 設定
 
-### Kubernetes 部署 - Helm Chart
+### 6.4 Kubernetes 部署 - Helm Chart
 
-- [ ] 建立 `deploy/helm/images-filters/` Helm chart 目錄
-- [ ] 建立 Chart.yaml
-- [ ] 建立 values.yaml (預設值)
-- [ ] 建立 values-prod.yaml
-- [ ] 建立 templates/deployment.yaml
-- [ ] 建立 templates/service.yaml
-- [ ] 建立 templates/configmap.yaml
-- [ ] 建立 templates/secret.yaml
-- [ ] 建立 templates/ingress.yaml
-- [ ] 建立 templates/hpa.yaml
-- [ ] 建立 templates/serviceaccount.yaml
-- [ ] 建立 templates/_helpers.tpl
-- [ ] 建立 templates/NOTES.txt
-- [ ] 撰寫 Helm chart README
+- [x] 建立 `deploy/helm/images-filters/` Helm chart 目錄
+- [x] 建立 Chart.yaml
+- [x] 建立 values.yaml (預設值)
+- [x] 建立 values-prod.yaml
+- [x] 建立 templates/deployment.yaml
+- [x] 建立 templates/service.yaml
+- [x] 建立 templates/configmap.yaml
+- [x] 建立 templates/secret.yaml
+- [x] 建立 templates/ingress.yaml
+- [x] 建立 templates/hpa.yaml
+- [x] 建立 templates/serviceaccount.yaml
+- [x] 建立 templates/_helpers.tpl
+- [x] 建立 templates/NOTES.txt
+- [x] 撰寫 Helm chart README
 
 ---
 

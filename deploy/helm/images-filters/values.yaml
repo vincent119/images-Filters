@@ -1,0 +1,128 @@
+# 預設值設定
+
+# 副本數
+replicaCount: 2
+
+# 映像設定
+image:
+  repository: images-filters
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ServiceAccount 設定
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod 安全設定
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# Service 設定
+service:
+  type: ClusterIP
+  port: 80
+
+# Ingress 設定
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: images-filters.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# 資源限制
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# 自動擴縮設定
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# 節點選擇器
+nodeSelector: {}
+
+# 容忍度
+tolerations: []
+
+# 親和性
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: images-filters
+          topologyKey: kubernetes.io/hostname
+
+# 應用程式設定
+config:
+  # 伺服器設定
+  server:
+    mode: release
+  # 日誌設定
+  logging:
+    level: info
+    format: json
+  # 處理設定
+  processing:
+    defaultQuality: 85
+    maxWidth: 4096
+    maxHeight: 4096
+    workers: 4
+  # 快取設定
+  cache:
+    type: memory
+    redis:
+      host: redis
+      port: 6379
+  # 安全設定
+  security:
+    enabled: false
+    allowUnsafe: true
+  # Metrics 設定
+  metrics:
+    enabled: true
+    path: /metrics
+
+# Secret 設定
+secrets:
+  # Redis 密碼（Base64 編碼）
+  redisPassword: ""
+  # 安全金鑰（Base64 編碼）
+  securityKey: ""

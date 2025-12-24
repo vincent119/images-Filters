@@ -1,0 +1,23 @@
+apiVersion: v2
+name: images-filters
+description: 高效能圖片處理服務 Helm Chart
+
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - images
+  - image-processing
+  - thumbor
+  - golang
+
+home: https://github.com/vincent119/images-filters
+sources:
+  - https://github.com/vincent119/images-filters
+
+maintainers:
+  - name: vincent119
+    email: vincent@example.com
+
+dependencies: []

@@ -1,0 +1,23 @@
+# Kustomize base 設定
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: images-filters
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
+  - serviceaccount.yaml
+  - secret.yaml
+  - hpa.yaml
+  - pdb.yaml
+
+commonLabels:
+  app.kubernetes.io/name: images-filters
+  app.kubernetes.io/component: server
+
+images:
+  - name: images-filters
+    newName: images-filters
+    newTag: latest

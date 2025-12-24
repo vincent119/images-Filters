@@ -1,0 +1,62 @@
+# Kustomize prod overlay 設定
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: images-filters-prod
+
+resources:
+  - ../../base
+
+namePrefix: prod-
+
+commonLabels:
+  environment: production
+
+images:
+  - name: images-filters
+    newName: your-registry.com/images-filters
+    newTag: v1.0.0
+
+replicas:
+  - name: images-filters
+    count: 3
+
+patches:
+  # 更新 Deployment 資源限制
+  - target:
+      kind: Deployment
+      name: images-filters
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 500m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 512Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "4"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 4Gi
+  # 更新 HPA 設定
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: images-filters
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 3
+      - op: replace
+        path: /spec/maxReplicas
+        value: 20
+
+configMapGenerator:
+  - name: images-filters-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
+      - CACHE_TYPE=redis
+      - SECURITY_ENABLED=true
+      - SECURITY_ALLOW_UNSAFE=false

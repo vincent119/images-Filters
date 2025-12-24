@@ -1,0 +1,79 @@
+# 生產環境值覆蓋
+
+# 副本數由 HPA 控制
+replicaCount: 3
+
+# 映像設定
+image:
+  repository: your-registry.com/images-filters
+  pullPolicy: Always
+  tag: "v1.0.0"
+
+# 資源限制（生產環境加大）
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: "4"
+    memory: 4Gi
+
+# 自動擴縮設定（生產環境）
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Ingress 設定
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+  hosts:
+    - host: images.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: images-filters-tls
+      hosts:
+        - images.example.com
+
+# 應用程式設定（生產環境）
+config:
+  server:
+    mode: release
+  logging:
+    level: info
+    format: json
+  processing:
+    defaultQuality: 85
+    maxWidth: 4096
+    maxHeight: 4096
+    workers: 8
+  cache:
+    type: redis
+    redis:
+      host: redis-master
+      port: 6379
+  security:
+    enabled: true
+    allowUnsafe: false
+  metrics:
+    enabled: true
+    path: /metrics
+
+# Secret 設定（請使用 Sealed Secrets 或外部 Secret 管理）
+secrets:
+  redisPassword: ""
+  securityKey: ""
