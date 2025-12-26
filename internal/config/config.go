@@ -226,23 +226,29 @@ func Load(configPath string) (*Config, error) {
 	return &cfg, nil
 }
 
-// ValidateConfig 使用 validator 驗證設定結構體
+// ValidateConfig validates config struct using validator
+// Note: This runs before zlogger is initialized, so errors are output to stderr
 func ValidateConfig(cfg *Config) error {
 	if err := validate.Struct(cfg); err != nil {
-		// 轉換驗證錯誤為更友善的格式
+		// Convert validation errors to a more friendly format
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			var errMsgs []string
 			for _, e := range validationErrors {
 				errMsgs = append(errMsgs, formatValidationError(e))
 			}
-			return fmt.Errorf("config validation failed:\n  - %s", strings.Join(errMsgs, "\n  - "))
+			errMsg := fmt.Sprintf("config validation failed:\n  - %s", strings.Join(errMsgs, "\n  - "))
+			// Output to stderr since zlogger is not initialized yet
+			fmt.Fprintln(os.Stderr, "[ERROR]", errMsg)
+			return fmt.Errorf("%s", errMsg)
 		}
-		return fmt.Errorf("config validation failed: %w", err)
+		errMsg := fmt.Sprintf("config validation failed: %v", err)
+		fmt.Fprintln(os.Stderr, "[ERROR]", errMsg)
+		return fmt.Errorf("%s", errMsg)
 	}
 	return nil
 }
 
-// formatValidationError 格式化單個驗證錯誤
+// formatValidationError formats a single validation error
 func formatValidationError(e validator.FieldError) string {
 	field := e.Namespace()
 	tag := e.Tag()
@@ -251,21 +257,21 @@ func formatValidationError(e validator.FieldError) string {
 
 	switch tag {
 	case "required":
-		return fmt.Sprintf("%s 為必填欄位", field)
+		return fmt.Sprintf("%s is required", field)
 	case "required_if":
-		return fmt.Sprintf("%s 在特定條件下為必填", field)
+		return fmt.Sprintf("%s is required under certain conditions", field)
 	case "min":
-		return fmt.Sprintf("%s 最小值為 %s（目前值: %v）", field, param, value)
+		return fmt.Sprintf("%s minimum value is %s (current: %v)", field, param, value)
 	case "max":
-		return fmt.Sprintf("%s 最大值為 %s（目前值: %v）", field, param, value)
+		return fmt.Sprintf("%s maximum value is %s (current: %v)", field, param, value)
 	case "oneof":
-		return fmt.Sprintf("%s 必須是 [%s] 其中之一（目前值: %v）", field, param, value)
+		return fmt.Sprintf("%s must be one of [%s] (current: %v)", field, param, value)
 	case "ip":
-		return fmt.Sprintf("%s 必須是有效的 IP 地址（目前值: %v）", field, value)
+		return fmt.Sprintf("%s must be a valid IP address (current: %v)", field, value)
 	case "hostname":
-		return fmt.Sprintf("%s 必須是有效的主機名稱（目前值: %v）", field, value)
+		return fmt.Sprintf("%s must be a valid hostname (current: %v)", field, value)
 	default:
-		return fmt.Sprintf("%s 驗證失敗 (%s: %s)", field, tag, param)
+		return fmt.Sprintf("%s validation failed (%s: %s)", field, tag, param)
 	}
 }
 
