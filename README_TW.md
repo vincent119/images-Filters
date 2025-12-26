@@ -65,31 +65,31 @@ http://localhost:8080/unsafe/300x200/filters:grayscale()/image.jpg
 http://localhost:8080/H9a8s.../300x200/image.jpg
 ```
 
-更多詳細資訊請參閱 [完整文件](docs/TW/README.md)。
+更多詳細資訊請參閱 [完整文件](documentation/TW/README.md)。
 
 ## 📚 文件索引 (Documentation)
 
 ### 核心文件 (Core Docs)
 
-- [系統架構 (Architecture)](docs/TW/architecture.md)
-- [API 規格 (API Specification)](docs/TW/api.md)
-- [安全設計 (Security Design)](docs/TW/security.md)
-- [配置說明 (Configuration)](docs/TW/configuration.md)
-- [隱形浮水印 (Blind Watermark)](docs/TW/blind-watermark.md)
+- [系統架構 (Architecture)](documentation/TW/references/architecture.md)
+- [API 規格 (API Specification)](documentation/TW/references/api.md)
+- [安全設計 (Security Design)](documentation/TW/references/security.md)
+- [配置說明 (Configuration)](documentation/TW/references/configuration.md)
+- [隱形浮水印 (Blind Watermark)](documentation/TW/guides/blind-watermark.md)
 
 ### 進階指南 (Advanced Guides)
 
-- [圖片處理流程 (Image Pipeline)](docs/TW/image-pipeline.md)
-- [快取策略 (Cache Strategy)](docs/TW/cache-strategy.md)
-- [監控與指標 (Observability)](docs/TW/observability.md)
-- [效能調優 (Performance)](docs/TW/performance.md)
+- [圖片處理流程 (Image Pipeline)](documentation/TW/guides/image-pipeline.md)
+- [快取策略 (Cache Strategy)](documentation/TW/guides/cache-strategy.md)
+- [監控與指標 (Observability)](documentation/TW/guides/observability.md)
+- [效能調優 (Performance)](documentation/TW/guides/performance.md)
 
 ### 維運與開發 (Ops & Dev)
 
-- [部署指南 (Deployment)](docs/TW/deployment.md)
-- [除錯指南 (Troubleshooting)](docs/TW/troubleshooting.md)
-- [開發指南 (Developer Guide)](docs/TW/dev-guide.md)
-- [貢獻規範 (Contributing)](docs/TW/contributing.md)
+- [部署指南 (Deployment)](documentation/TW/guides/deployment.md)
+- [除錯指南 (Troubleshooting)](documentation/TW/guides/troubleshooting.md)
+- [開發指南 (Developer Guide)](documentation/TW/guides/dev-guide.md)
+- [貢獻規範 (Contributing)](documentation/TW/guides/contributing.md)
 
 ## 🛠️ 開發指令
 

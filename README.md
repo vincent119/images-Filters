@@ -65,7 +65,7 @@ http://localhost:8080/unsafe/300x200/filters:grayscale()/https%3A%2F%2Fexample.c
 http://localhost:8080/H9a8s.../300x200/image.jpg
 ```
 
-For more details, please refer to the [Documentation](docs/README.md).
+For more details, please refer to the [Documentation](documentation/EN/README.md).
 
 ---
 
@@ -73,25 +73,25 @@ For more details, please refer to the [Documentation](docs/README.md).
 
 ### Core Docs
 
-- [Architecture](docs/architecture.md)
-- [API Specification](docs/api.md)
-- [Security Design](docs/security.md)
-- [Configuration](docs/configuration.md)
-- [Blind Watermark](docs/blind-watermark.md)
+- [Architecture](documentation/EN/references/architecture.md)
+- [API Specification](documentation/EN/references/api.md)
+- [Security Design](documentation/EN/references/security.md)
+- [Configuration](documentation/EN/references/configuration.md)
+- [Blind Watermark](documentation/EN/guides/blind-watermark.md)
 
 ### Advanced Guides
 
-- [Image Pipeline](docs/image-pipeline.md)
-- [Cache Strategy](docs/cache-strategy.md)
-- [Observability](docs/observability.md)
-- [Performance](docs/performance.md)
+- [Image Pipeline](documentation/EN/guides/image-pipeline.md)
+- [Cache Strategy](documentation/EN/guides/cache-strategy.md)
+- [Observability](documentation/EN/guides/observability.md)
+- [Performance](documentation/EN/guides/performance.md)
 
 ### Ops & Dev
 
-- [Deployment](docs/deployment.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Developer Guide](docs/dev-guide.md)
-- [Contributing](docs/contributing.md)
+- [Deployment](documentation/EN/guides/deployment.md)
+- [Troubleshooting](documentation/EN/guides/troubleshooting.md)
+- [Developer Guide](documentation/EN/guides/dev-guide.md)
+- [Contributing](documentation/EN/guides/contributing.md)
 
 ## 🛠️ Development
 
