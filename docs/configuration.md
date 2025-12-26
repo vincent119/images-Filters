@@ -31,6 +31,8 @@ security:
   security_key: "your-secret-key"
   allow_unsafe: false
   allowed_sources: []
+  max_width: 4096    # Max allowed request width
+  max_height: 4096   # Max allowed request height
 
 storage:
   type: "local" # local, s3, mixed
@@ -54,6 +56,8 @@ cache:
     pool:
       size: 10
       timeout: 4
+    tls:
+      enabled: false
 
 logging:
   level: "info" # debug, info, warn, error
@@ -62,11 +66,20 @@ logging:
 
 metrics:
   enabled: true
+  namespace: "imgfilter"
   path: "/metrics"
+  username: ""  # Basic Auth (optional)
+  password: ""
 
 swagger:
   enabled: true
   path: "/swagger"
+  username: ""  # Basic Auth (optional)
+  password: ""
+
+blind_watermark:
+  enabled: true
+  text: "COPYRIGHT"
 ```
 
 ### Environment Variables
@@ -74,11 +87,14 @@ swagger:
 All configuration keys map to environment variables. Arrays and nested objects use underscore `_` separators and the prefix `IMG_`.
 
 | Variable | Description | Default |
-| ---------- | ------------- | --------- |
+| -------- | ----------- | ------- |
 | `IMG_SERVER_PORT` | Server listening port | `8080` |
 | `IMG_LOGGING_LEVEL` | Log level | `info` |
 | `IMG_CACHE_TYPE` | Cache backend | `memory` |
 | `IMG_CACHE_REDIS_HOST` | Redis host | `localhost` |
 | `IMG_SECURITY_ENABLED` | Enable HMAC check | `false` |
-| `IMG_SECURITY_KEY` | Secret for HMAC | `""` |
+| `IMG_SECURITY_SECURITY_KEY` | Secret for HMAC | `""` |
 | `IMG_STORAGE_TYPE` | Storage backend | `local` |
+| `IMG_BLIND_WATERMARK_ENABLED` | Enable blind watermark | `true` |
+| `IMG_BLIND_WATERMARK_TEXT` | Watermark text | `""` |
+| `IMG_METRICS_NAMESPACE` | Prometheus namespace | `imgfilter` |

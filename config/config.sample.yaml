@@ -103,3 +103,9 @@ swagger:
   path: "/swagger"
   username: ""         # Basic Auth username (optional)
   password: ""         # Basic Auth password (optional)
+
+# Blind Watermark Configuration
+blind_watermark:
+  enabled: true        # Enable blind watermark embedding on processed images
+  text: "COPYRIGHT"    # Text to embed (keep short, max ~16 chars recommended)
+  security_key: ""     # Optional: separate key for watermark operations

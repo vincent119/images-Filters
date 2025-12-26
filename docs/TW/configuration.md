@@ -31,6 +31,8 @@ security:
   security_key: "your-secret-key"
   allow_unsafe: false
   allowed_sources: []
+  max_width: 4096    # 請求允許的最大寬度
+  max_height: 4096   # 請求允許的最大高度
 
 storage:
   type: "local" # local, s3, mixed
@@ -54,6 +56,8 @@ cache:
     pool:
       size: 10
       timeout: 4
+    tls:
+      enabled: false
 
 logging:
   level: "info" # debug, info, warn, error
@@ -62,11 +66,20 @@ logging:
 
 metrics:
   enabled: true
+  namespace: "imgfilter"
   path: "/metrics"
+  username: ""  # Basic Auth（可選）
+  password: ""
 
 swagger:
   enabled: true
   path: "/swagger"
+  username: ""  # Basic Auth（可選）
+  password: ""
+
+blind_watermark:
+  enabled: true
+  text: "COPYRIGHT"
 ```
 
 ### 環境變數
@@ -74,11 +87,14 @@ swagger:
 所有設定鍵值皆對應至環境變數。陣列與巢狀物件使用底線 `_` 分隔，並加上前綴 `IMG_`。
 
 | 變數名稱 | 說明 | 預設值 |
-| ---------- | ------------- | --------- |
+| -------- | ---- | ------ |
 | `IMG_SERVER_PORT` | 伺服器監聽埠號 | `8080` |
 | `IMG_LOGGING_LEVEL` | 日誌等級 | `info` |
 | `IMG_CACHE_TYPE` | 快取後端 | `memory` |
 | `IMG_CACHE_REDIS_HOST` | Redis 主機 | `localhost` |
 | `IMG_SECURITY_ENABLED` | 啟用 HMAC 簽名驗證 | `false` |
-| `IMG_SECURITY_KEY` | HMAC 金鑰 | `""` |
+| `IMG_SECURITY_SECURITY_KEY` | HMAC 金鑰 | `""` |
 | `IMG_STORAGE_TYPE` | 儲存後端 | `local` |
+| `IMG_BLIND_WATERMARK_ENABLED` | 啟用隱形浮水印 | `true` |
+| `IMG_BLIND_WATERMARK_TEXT` | 浮水印文字 | `""` |
+| `IMG_METRICS_NAMESPACE` | Prometheus 命名空間 | `imgfilter` |

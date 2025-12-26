@@ -129,6 +129,7 @@ aws lambda publish-version --region us-east-1 --function-name images-filters-ori
 ### 3. 設定 CloudFront Distribution
 
 在 CloudFront Behavior 中：
+
 - **Origin Request**: 關聯 `images-filters-origin-request`
 - **Origin Response**: 關聯 `images-filters-origin-response`
 
