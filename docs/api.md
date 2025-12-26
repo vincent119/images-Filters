@@ -66,6 +66,46 @@ Expose Prometheus metrics.
 - **URL**: `GET /metrics`
 - **Format**: Prometheus text format.
 
+#### 4. Image Upload
+
+Upload an image to the server (requires authentication).
+
+- **URL**: `POST /upload`
+- **Headers**:
+  - `Authorization`: `Bearer <SECURITY_KEY>`
+  - `Content-Type`: `multipart/form-data`
+- **Parameters**:
+  - `file`: The image file to upload.
+- **Response**:
+
+  ```json
+  {
+    "path": "uploads/2025/12/26/image.jpg",
+    "url": "http://localhost:8080/..."
+  }
+  ```
+
+#### 5. Blind Watermark Detection
+
+Detect blind watermarks in an image (requires authentication).
+
+- **URL**: `POST /detect`
+- **Headers**:
+  - `Authorization`: `Bearer <SECURITY_KEY>`
+  - `Content-Type`: `multipart/form-data` or `application/x-www-form-urlencoded`
+- **Parameters** (provide either `file` OR `path`):
+  - `file`: Upload an image file to detect.
+  - `path`: Storage path of an existing image (e.g., `uploads/2025/12/26/image.jpg`).
+- **Response**:
+
+  ```json
+  {
+    "detected": true,
+    "text": "COPYRIGHT",
+    "confidence": 0.95
+  }
+  ```
+
 ### Error Codes
 
 Error responses are returned in JSON format (except for some 404s which might return standard server pages depending on config).

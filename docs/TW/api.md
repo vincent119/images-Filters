@@ -65,6 +65,46 @@
 
 - **URL**: `GET /metrics`
 
+#### 4. 圖片上傳 (Image Upload)
+
+上傳圖片到服務器 (需要認證)。
+
+- **URL**: `POST /upload`
+- **Headers**:
+  - `Authorization`: `Bearer <SECURITY_KEY>`
+  - `Content-Type`: `multipart/form-data`
+- **參數**:
+  - `file`: 要上傳的圖片檔案。
+- **回應**:
+
+  ```json
+  {
+    "path": "uploads/2025/12/26/image.jpg",
+    "url": "http://localhost:8080/..."
+  }
+  ```
+
+#### 5. 隱形浮水印檢測 (Blind Watermark Detection)
+
+檢測圖片中的隱形浮水印 (需要認證)。
+
+- **URL**: `POST /detect`
+- **Headers**:
+  - `Authorization`: `Bearer <SECURITY_KEY>`
+  - `Content-Type`: `multipart/form-data` 或 `application/x-www-form-urlencoded`
+- **參數** (擇一提供 `file` 或 `path`):
+  - `file`: 上傳要檢測的圖片檔案。
+  - `path`: 已存在儲存層的圖片路徑 (例如 `uploads/2025/12/26/image.jpg`)。
+- **回應**:
+
+  ```json
+  {
+    "detected": true,
+    "text": "COPYRIGHT",
+    "confidence": 0.95
+  }
+  ```
+
 ### 錯誤代碼 (Error Codes)
 
 錯誤回應使用 JSON 格式。

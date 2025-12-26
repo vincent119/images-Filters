@@ -14,7 +14,7 @@ A high-performance image processing server supporting real-time resizing, croppi
 
 - 🖼️ **Image Processing**: Real-time Resize, Crop, Flip, Rotate, Format Conversion.
 - 🎨 **Filters**: Blur, Grayscale, Brightness, Contrast, Sharpen, and more.
-- 💧 **Watermark**: Support image watermarks with adjustable position and opacity.
+- 💧 **Watermark**: Support visible image watermarks and **invisible blind watermarks**.
 - 🔒 **Security**: HMAC-SHA256 URL signing to prevent tampering.
 - 📦 **Multiple Storage**: Local filesystem, AWS S3, and Mixed mode (local cache + remote source).
 - ⚡ **High Performance**: Built-in Redis cache, Worker Pool processing, and Go concurrency.
@@ -77,6 +77,7 @@ For more details, please refer to the [Documentation](docs/README.md).
 - [API Specification](docs/api.md)
 - [Security Design](docs/security.md)
 - [Configuration](docs/configuration.md)
+- [Blind Watermark](docs/blind-watermark.md)
 
 ### Advanced Guides
 

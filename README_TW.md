@@ -14,7 +14,7 @@
 
 - 🖼️ **圖片處理**：即時縮放 (Resize)、裁切 (Crop)、翻轉 (Flip)、旋轉 (Rotate)、格式轉換。
 - 🎨 **濾鏡效果**：模糊 (Blur)、灰階 (Grayscale)、亮度 (Brightness)、對比度 (Contrast)、銳化 (Sharpen) 等。
-- 💧 **浮水印**：支援圖片浮水印，可自訂位置與透明度。
+- 💧 **浮水印**：支援圖片浮水印與**隱形浮水印 (Blind Watermark)**。
 - 🔒 **安全機制**：HMAC-SHA256 URL 簽名驗證，防止惡意竄改。
 - 📦 **多種儲存**：支援本地檔案系統、AWS S3 以及混合模式（本地快取 + 遠端來源）。
 - ⚡ **高效能**：內建 Redis 快取機制、Worker Pool 處理池、Go 並發優化。
@@ -75,6 +75,7 @@ http://localhost:8080/H9a8s.../300x200/image.jpg
 - [API 規格 (API Specification)](docs/TW/api.md)
 - [安全設計 (Security Design)](docs/TW/security.md)
 - [配置說明 (Configuration)](docs/TW/configuration.md)
+- [隱形浮水印 (Blind Watermark)](docs/TW/blind-watermark.md)
 
 ### 進階指南 (Advanced Guides)
 
