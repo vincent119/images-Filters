@@ -1,0 +1,19 @@
+{
+  "name": "images-filters-signature-validator",
+  "version": "1.0.0",
+  "description": "Lambda@Edge function for HMAC signature validation",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js",
+    "package": "zip -r function.zip index.js"
+  },
+  "keywords": [
+    "lambda",
+    "edge",
+    "cloudfront",
+    "hmac",
+    "signature"
+  ],
+  "author": "",
+  "license": "MIT"
+}

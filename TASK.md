@@ -585,6 +585,35 @@ swagger:
 
 ---
 
+## Phase 9: CDN 邊緣處理整合
+
+### 9.1 CloudFront Function
+
+- [x] 建立 `example/aws/cloudfront_function/` 目錄
+- [x] 實作 `url_validator.js` - URL 格式驗證
+- [x] 撰寫部署說明 `README.md`
+
+### 9.2 Lambda@Edge
+
+- [x] 建立 `example/aws/lambda/signature_validator/` 目錄
+- [x] 實作 `index.js` - 完整 HMAC 簽名驗證
+- [x] 建立 `package.json`
+- [x] 撰寫部署說明 `README.md`
+
+### 9.3 Origin Group Failover (進階)
+
+- [x] 建立 `example/aws/lambda/origin_failover/` 目錄
+- [x] 實作 `origin_request.js` - S3 優先讀取
+- [x] 實作 `origin_response.js` - S3 Miss 時 Failover 到 API Server
+- [x] 撰寫部署說明與架構比較 `README.md`
+
+### 9.4 文件更新
+
+- [x] 更新 `IMPLEMENTATION_PLAN.md`
+- [x] 更新 `TASK.md`
+
+---
+
 ## 7 備註
 
 - ⭐ 標記為高優先級任務

@@ -649,3 +649,61 @@ go test -cover ./...
 - 流程：若未上傳檔案但提供了有效路徑，Server 將直接從儲存層讀取圖片進行檢測
 - 更新 Swagger 註解
 - 撰寫單元測試
+
+---
+
+## Phase 9: CDN 邊緣處理整合
+
+### 9.1 CloudFront Function
+
+在邊緣節點執行輕量級 URL 驗證，快速拒絕無效請求。
+
+- 範例程式碼: `example/aws/cloudfront_function/url_validator.js`
+- 功能：
+  - URL 格式驗證
+  - 簽名格式檢查（長度、字元）
+  - URL 正規化
+  - 支援 `/unsafe/` 開發模式
+
+### 9.2 Lambda@Edge
+
+在邊緣節點執行完整 HMAC 簽名驗證。
+
+- 範例程式碼: `example/aws/lambda/signature_validator/`
+- 功能：
+  - 完整 HMAC-SHA256 簽名驗證
+  - 時序安全比對（防計時攻擊）
+  - 支援 Secrets Manager 金鑰管理
+- 部署區域: 必須部署在 `us-east-1`
+
+### 9.3 推薦架構
+
+```text
+Client
+  → CloudFront
+    → [CloudFront Function: 格式驗證]
+    → [Cache Layer: 命中則直接回傳]
+    → [Lambda@Edge: HMAC 驗證 (可選)]
+    → Origin (圖片服務)
+```
+
+### 9.4 Origin Group Failover (進階)
+
+高流量場景的進階架構，S3 作為處理圖片快取層。
+
+- 範例程式碼: `example/aws/lambda/origin_failover/`
+- 檔案：
+  - `origin_request.js` - 將請求導向 S3
+  - `origin_response.js` - S3 Miss 時 Failover 到 API Server
+- 流程：
+  1. CloudFront 先查 S3（已處理的圖片）
+  2. S3 有 → 直接回傳
+  3. S3 沒有 → Failover 到 API Server 處理
+  4. 處理完可存回 S3，下次直接命中
+
+### 9.5 方式比較
+
+| 方式 | 適用場景 | 架構複雜度 |
+| ---- | -------- | ---------- |
+| 方式 1：純 API Server | 日請求 < 100 萬、開發測試 | 低 |
+| 方式 2：S3 + Failover | 日請求 > 100 萬、生產環境 | 高 |
