@@ -21,8 +21,16 @@ type Config struct {
 	Storage    StorageConfig    `mapstructure:"storage" validate:"required"`
 	Cache      CacheConfig      `mapstructure:"cache"`
 	Logging    LoggingConfig    `mapstructure:"logging" validate:"required"`
-	Metrics    MetricsConfig    `mapstructure:"metrics"`
-	Swagger    SwaggerConfig    `mapstructure:"swagger"`
+	Metrics    MetricsConfig        `mapstructure:"metrics"`
+	Swagger    SwaggerConfig        `mapstructure:"swagger"`
+	BlindWatermark BlindWatermarkConfig `mapstructure:"blind_watermark"`
+}
+
+// BlindWatermarkConfig 隱形浮水印設定
+type BlindWatermarkConfig struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	SecurityKey string `mapstructure:"security_key"`
+	Text        string `mapstructure:"text"`
 }
 
 // SwaggerConfig Swagger UI 設定
@@ -326,6 +334,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("swagger.path", "/swagger")
 	v.SetDefault("swagger.username", "")
 	v.SetDefault("swagger.password", "")
+
+	// Blind Watermark 預設值
+	v.SetDefault("blind_watermark.enabled", true)
+	v.SetDefault("blind_watermark.security_key", "")
+	v.SetDefault("blind_watermark.text", "")
 }
 
 // GetAddress 取得服務器監聽地址

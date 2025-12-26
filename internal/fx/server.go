@@ -68,14 +68,15 @@ type RouteParams struct {
 	fx.In
 
 	Engine       *gin.Engine
-	ImageService service.ImageService
-	Config       *config.Config
-	Metrics      metrics.Metrics `optional:"true"`
+	ImageService     service.ImageService
+	WatermarkService service.WatermarkService
+	Config           *config.Config
+	Metrics          metrics.Metrics `optional:"true"`
 }
 
 // RegisterRoutes registers all routes
 func RegisterRoutes(params RouteParams) {
-	routes.Setup(params.Engine, params.ImageService, params.Config, params.Metrics)
+	routes.Setup(params.Engine, params.ImageService, params.WatermarkService, params.Config, params.Metrics)
 }
 
 // ServerStartParams server start parameters

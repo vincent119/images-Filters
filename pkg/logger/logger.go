@@ -22,6 +22,7 @@ func Init(cfg *config.LoggingConfig) {
 		zloggerCfg.ColorEnabled = true
 	default:
 		zloggerCfg.Format = "json"
+		zloggerCfg.ColorEnabled = false // JSON 格式禁用顏色，避免 ANSI 轉義序列污染輸出
 	}
 
 	// 設定輸出位置

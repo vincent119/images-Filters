@@ -123,3 +123,85 @@ func containsHelper(s, substr string) bool {
 	}
 	return false
 }
+
+// UploadResponse 上傳回應
+type UploadResponse struct {
+	Path string `json:"path"`
+	URL  string `json:"url"`
+}
+
+// HandleUpload 處理圖片上傳
+// @Summary Upload image
+// @Description Upload an image file to storage
+// @Tags Image
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Image file to upload"
+// @Success 200 {object} UploadResponse
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal error"
+// @Security BearerAuth
+// @Router /upload [post]
+func (h *Handler) HandleUpload(c *gin.Context) {
+	// 取得上傳的檔案
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "INVALID_FILE",
+			Message: "Failed to read uploaded file: " + err.Error(),
+		})
+		return
+	}
+	defer file.Close()
+
+	// 取得檔案資訊
+	filename := header.Filename
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	// 驗證檔案類型
+	if !isValidImageType(contentType) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "INVALID_FILE_TYPE",
+			Message: "Only image files are allowed",
+		})
+		return
+	}
+
+	// 呼叫 Service 進行上傳
+	result, err := h.imageService.UploadImage(c.Request.Context(), filename, contentType, file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "UPLOAD_ERROR",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// 回傳結果
+	c.JSON(http.StatusOK, UploadResponse{
+		Path: result.Path,
+		URL:  result.SignedURL,
+	})
+}
+
+// isValidImageType 檢查是否為有效的圖片類型
+func isValidImageType(contentType string) bool {
+	validTypes := map[string]bool{
+		"image/jpeg":    true,
+		"image/png":     true,
+		"image/gif":     true,
+		"image/webp":    true,
+		"image/avif":    true,
+		"image/jxl":     true,
+		"image/svg+xml": true,
+		"image/heic":    true,
+		"image/heif":    true,
+		"image/bmp":     true,
+		"image/tiff":    true,
+	}
+	return validTypes[contentType]
+}

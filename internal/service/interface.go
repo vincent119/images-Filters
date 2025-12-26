@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"image"
+	"io"
 
 	"github.com/vincent119/images-filters/internal/metrics"
 	"github.com/vincent119/images-filters/internal/parser"
@@ -14,6 +15,18 @@ type ImageService interface {
 	// ProcessImage 處理圖片
 	// 根據解析後的 URL 參數處理圖片並返回處理結果
 	ProcessImage(ctx context.Context, parsedURL *parser.ParsedURL) ([]byte, string, error)
+
+	// UploadImage 上傳圖片
+	// 儲存圖片並回傳儲存路徑與簽名 URL
+	UploadImage(ctx context.Context, filename string, contentType string, reader io.Reader) (*UploadResult, error)
+}
+
+// UploadResult 上傳結果
+type UploadResult struct {
+	// Path 儲存路徑
+	Path string `json:"path"`
+	// SignedURL 簽名後的存取 URL
+	SignedURL string `json:"url"`
 }
 
 // ImageResult 圖片處理結果

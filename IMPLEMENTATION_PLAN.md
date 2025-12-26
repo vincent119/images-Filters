@@ -547,6 +547,32 @@ flowchart LR
 
 ---
 
+## Phase 7: 圖片上傳 API
+
+### 7.1 上傳功能實作
+
+- [ ] 擴充 `internal/service/interface.go` 加入 `UploadImage`
+  - [ ] Input: `io.Reader`, filename, contentType
+  - [ ] Output: `savedPath`, `signedURL`, error
+- [ ] 實作 `internal/service/image_service.go` 的上傳邏輯
+  - [ ] 使用 `PutStream` 儲存檔案
+  - [ ] 產生 HMAC 簽名 URL (針對原始圖片路徑)
+- [ ] 擴充 `internal/api/handler.go` 加入 `HandleUpload`
+  - [ ] 處理 `multipart/form-data`
+  - [ ] 驗證檔案類型與大小
+- [ ] 實作上傳安全中介層
+  - [ ] 驗證 `Authorization: Bearer <SecurityKey>`
+- [ ] 更新 `routes/routes.go` 註冊 `POST /upload` (套用安全中介層)
+- [ ] 回傳 JSON: `{"url": "<signed_url>", "path": "<saved_path>"}`
+
+### 7.2 驗證與測試
+
+- [ ] 撰寫上傳功能單元測試 (Mock Storage/Service)
+- [ ] 手動測試上傳 API (`curl -H "Authorization: Bearer ..." -F "file=@..."`)
+- [ ] 驗證回傳的 Signed URL 是否可訪問
+
+---
+
 ## User Review Required
 
 > [!IMPORTANT]
@@ -588,3 +614,38 @@ go test -cover ./...
 - [Thumbor 官方文件](https://thumbor.readthedocs.io/)
 - [Thumbor GitHub](https://github.com/thumbor/thumbor)
 - [Go imaging 套件](https://github.com/disintegration/imaging)
+
+---
+
+## Phase 8: 隱形浮水印 (Blind Watermark)
+
+### 8.1 設定與自動化
+
+- 更新 Config 結構支援 `BlindWatermark` (`internal/config/config.go`)
+- 更新 `image_service.go` 自動套用浮水印邏輯
+
+### 8.2 核心算法實作
+
+- 實作 DCT/IDCT 變換 (`internal/filter/blind_watermark.go`)
+- 實作文字轉二進位編碼邏輯
+- 實作頻域嵌入邏輯
+- 註冊 `blind_watermark` 濾鏡
+- 撰寫單元測試
+
+### 8.3 浮水印檢測服務
+
+- 建立 `WatermarkService` 介面 (`internal/service/watermark_service.go`)
+- 實作 `DetectWatermark` 方法（從 io.Reader 檢測）
+- 實作浮水印提取與比對邏輯
+- 建立 `WatermarkHandler` (`internal/api/watermark_handler.go`)
+- 實作 `HandleDetect` API 端點
+- 註冊 `/detect` 路由（含認證中介層）
+- 實作 fx 依賴注入整合
+
+### 8.4 支援路徑檢測
+
+- 修改 `WatermarkService` 以支援從 Storage 讀取檔案
+- API `/detect` 接口新增 `path` 參數，允許傳入如 `uploads/2025/12/26/...` 的路徑
+- 流程：若未上傳檔案但提供了有效路徑，Server 將直接從儲存層讀取圖片進行檢測
+- 更新 Swagger 註解
+- 撰寫單元測試

@@ -13,6 +13,7 @@ import (
 // ServiceModule provides service dependencies
 var ServiceModule = fx.Module("service",
 	fx.Provide(NewImageService),
+	fx.Provide(NewWatermarkService),
 )
 
 // ServiceParams service module parameters
@@ -23,6 +24,11 @@ type ServiceParams struct {
 	Storage storage.Storage
 	Cache   cache.Cache
 	Metrics metrics.Metrics `optional:"true"`
+}
+
+// NewWatermarkService creates a new watermark service
+func NewWatermarkService(cfg *config.Config, s storage.Storage) service.WatermarkService {
+	return service.NewWatermarkService(cfg, s)
 }
 
 // NewImageService creates a new image service instance

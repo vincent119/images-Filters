@@ -19,9 +19,10 @@ import (
 )
 
 // Setup 設定路由
-func Setup(engine *gin.Engine, imageService service.ImageService, cfg *config.Config, m metrics.Metrics) {
+func Setup(engine *gin.Engine, imageService service.ImageService, watermarkService service.WatermarkService, cfg *config.Config, m metrics.Metrics) {
 	// 建立處理器
 	handler := api.NewHandler(imageService)
+	watermarkHandler := api.NewWatermarkHandler(watermarkService)
 
 	// 套用全域中介層
 	engine.Use(api.CORSMiddleware())
@@ -67,6 +68,22 @@ func Setup(engine *gin.Engine, imageService service.ImageService, cfg *config.Co
 		} else {
 			engine.GET(swaggerPath+"/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 		}
+	}
+
+	// 圖片上傳端點（需要 Bearer Auth）
+	if cfg.Security.Enabled && cfg.Security.SecurityKey != "" {
+		uploadGroup := engine.Group("/upload")
+		uploadGroup.Use(api.UploadAuthMiddleware(cfg.Security.SecurityKey, m))
+		uploadGroup.POST("", handler.HandleUpload)
+
+		// 浮水印檢測端點（共用 Upload Auth）
+		detectGroup := engine.Group("/detect")
+		detectGroup.Use(api.UploadAuthMiddleware(cfg.Security.SecurityKey, m))
+		detectGroup.POST("", watermarkHandler.HandleDetect)
+	} else {
+		// 安全機制未啟用時，允許直接上傳（僅開發環境）
+		engine.POST("/upload", handler.HandleUpload)
+		engine.POST("/detect", watermarkHandler.HandleDetect)
 	}
 
 	// 使用 NoRoute 處理所有其他請求（圖片處理）

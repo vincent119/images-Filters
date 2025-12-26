@@ -36,6 +36,7 @@ func RegisterDefaultFilters(r *Registry) {
 
 	// 浮水印濾鏡
 	r.MustRegister(NewWatermarkFilter())
+	r.MustRegister(NewBlindWatermarkFilter())
 }
 
 // init 自動註冊到全域 Registry

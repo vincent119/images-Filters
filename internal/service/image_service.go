@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -10,12 +11,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"github.com/vincent119/images-filters/internal/cache"
 	"github.com/vincent119/images-filters/internal/config"
+	"github.com/vincent119/images-filters/internal/filter"
 	"github.com/vincent119/images-filters/internal/loader"
 	"github.com/vincent119/images-filters/internal/metrics"
 	"github.com/vincent119/images-filters/internal/parser"
 	"github.com/vincent119/images-filters/internal/processor"
+	"github.com/vincent119/images-filters/internal/security"
 	"github.com/vincent119/images-filters/internal/storage"
 	"github.com/vincent119/images-filters/pkg/logger"
 )
@@ -30,6 +34,100 @@ type imageService struct {
 	cache     cache.Cache
 	sem       chan struct{} // Semaphore for concurrency control
 }
+
+
+// UploadImage 上傳圖片並回傳簽名 URL
+func (s *imageService) UploadImage(ctx context.Context, filename string, contentType string, reader io.Reader) (*UploadResult, error) {
+	var inputReader io.Reader = reader
+
+	// 0. 檢查是否啟用隱形浮水印
+	if s.cfg.BlindWatermark.Enabled {
+		logger.Debug("applying blind watermark", logger.String("filename", filename))
+
+		// 必須解碼圖片才能處理
+		img, err := imaging.Decode(reader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode image for watermarking: %w", err)
+		}
+
+		// 建立濾鏡
+		bwFilter := filter.NewBlindWatermarkFilter()
+		bwFilter.Text = s.cfg.BlindWatermark.Text
+		bwFilter.SecurityKey = s.cfg.BlindWatermark.SecurityKey
+
+		// 應用濾鏡
+		// 這裡不傳 params，使用 config 設定的預設值
+		watermarkedImg, err := bwFilter.Apply(img, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply blind watermark: %w", err)
+		}
+
+		// 編碼回 Buffer
+		buf := new(bytes.Buffer)
+		format, err := imaging.FormatFromExtension(filepath.Ext(filename))
+		if err != nil {
+			// Fallback to JPEG if unknown
+			format = imaging.JPEG
+		}
+
+		if err := imaging.Encode(buf, watermarkedImg, format); err != nil {
+			return nil, fmt.Errorf("failed to encode watermarked image: %w", err)
+		}
+
+		// 使用新的 reader
+		inputReader = buf
+	}
+
+	// 1. 產生儲存路徑 (uploads/{date}/{hash}_{filename})
+	now := time.Now()
+	datePrefix := now.Format("2006/01/02")
+
+	// 產生唯一前綴避免檔名衝突
+	hash := sha256.Sum256([]byte(fmt.Sprintf("%s-%d", filename, now.UnixNano())))
+	hashStr := hex.EncodeToString(hash[:])[:8]
+
+	// 組合完整路徑
+	savedPath := fmt.Sprintf("uploads/%s/%s_%s", datePrefix, hashStr, filepath.Base(filename))
+
+	logger.Debug("uploading image",
+		logger.String("filename", filename),
+		logger.String("saved_path", savedPath),
+		logger.String("content_type", contentType),
+	)
+
+	// 2. 儲存至 Storage
+	if err := s.storage.PutStream(ctx, savedPath, inputReader); err != nil {
+		logger.Error("failed to upload image",
+			logger.String("saved_path", savedPath),
+			logger.Err(err),
+		)
+		if s.metrics != nil {
+			s.metrics.RecordError("upload_error")
+		}
+		return nil, fmt.Errorf("failed to upload image: %w", err)
+	}
+
+	logger.Info("image uploaded successfully",
+		logger.String("saved_path", savedPath),
+	)
+
+	// 3. 產生簽名 URL (使用 security.Signer)
+	// 先產生用於訪問原始圖片的路徑 (不做任何處理)
+	// URL 格式: /{signature}/{image_path}
+	signedURL := s.generateSignedURL(savedPath)
+
+	// 4. 記錄指標
+	if s.metrics != nil {
+		s.metrics.RecordStorageOperation("local", "put")
+	}
+
+	return &UploadResult{
+		Path:      savedPath,
+		SignedURL: signedURL,
+	}, nil
+}
+
+
 
 // NewImageService 建立圖片處理服務
 func NewImageService(cfg *config.Config, store storage.Storage, c cache.Cache, opts ...ServiceOption) ImageService {
@@ -408,4 +506,17 @@ func isValidFormat(format string) bool {
 		"jxl":  true,
 	}
 	return validFormats[strings.ToLower(format)]
+}
+
+
+// generateSignedURL 產生簽名 URL
+func (s *imageService) generateSignedURL(imagePath string) string {
+	// 如果安全機制未啟用，使用 unsafe 路徑
+	if !s.cfg.Security.Enabled {
+		return "/unsafe/" + imagePath
+	}
+
+	// 使用統一的 Signer
+	signer := security.NewSigner(s.cfg.Security.SecurityKey)
+	return signer.SignURL(imagePath)
 }

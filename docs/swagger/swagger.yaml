@@ -11,6 +11,22 @@ definitions:
       status:
         type: string
     type: object
+  api.UploadResponse:
+    properties:
+      path:
+        type: string
+      url:
+        type: string
+    type: object
+  service.DetectionResult:
+    properties:
+      confidence:
+        type: number
+      detected:
+        type: boolean
+      text:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -45,6 +61,39 @@ paths:
       summary: Process image
       tags:
       - Image
+  /detect:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Detect blind watermark in image. Either upload a file or provide
+        a storage path.
+      parameters:
+      - description: Image file to detect (optional if path is provided)
+        in: formData
+        name: file
+        type: file
+      - description: Storage path of existing image (e.g. uploads/2025/12/26/image.jpg)
+        in: formData
+        name: path
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.DetectionResult'
+        "400":
+          description: Bad request - neither file nor path provided
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Detect watermark
+      tags:
+      - Watermark
   /healthz:
     get:
       description: Check if service is running properly
@@ -58,4 +107,39 @@ paths:
       summary: Health check
       tags:
       - Health
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an image file to storage
+      parameters:
+      - description: Image file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.UploadResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload image
+      tags:
+      - Image
 swagger: "2.0"

@@ -401,9 +401,6 @@ swagger:
 - [x] 壓力測試 (wrk/ab)
 - [x] 記憶體使用測試
 - [x] 快取效能測試
-- [x] 監控指標驗證
-
----
 
 ## Phase 5: 進階功能與新格式
 
@@ -533,6 +530,58 @@ swagger:
 - [x] 建立 templates/_helpers.tpl
 - [x] 建立 templates/NOTES.txt
 - [x] 撰寫 Helm chart README
+
+---
+
+---
+
+## Phase 7: 圖片上傳 API
+
+### 7.1 上傳功能實作
+
+- [x] 擴充 Service 介面支援 Upload
+- [x] 實作 Service Upload 邏輯 (包含簽名生成)
+- [x] 實作上傳安全中介層 (Bearer Auth)
+- [x] 實作 API Upload Handler (Multipart)
+- [x] 註冊 `POST /upload` 路由
+- [x] 撰寫 Upload 單元測試
+- [x] 手動驗證 Upload 功能與 Signed URL
+
+---
+
+## Phase 8: 隱形浮水印
+
+### 8.1 設定與自動化
+
+- [x] 更新 Config 結構支援 `BlindWatermark` (`internal/config/config.go`)
+- [x] 更新 `image_service.go` 自動套用浮水印邏輯
+
+### 8.2 核心算法實作
+
+- [x] 實作 DCT/IDCT 變換 (`internal/filter/blind_watermark.go`)
+- [x] 實作文字轉二進位編碼邏輯
+- [x] 實作頻域嵌入邏輯
+- [x] 註冊 `blind_watermark` 濾鏡
+- [x] 撰寫單元測試
+
+### 8.3 浮水印檢測服務
+
+- [x] 建立 `WatermarkService` 介面 (`internal/service/watermark_service.go`)
+- [x] 實作 `DetectWatermark` 方法（從 io.Reader 檢測）
+- [x] 實作浮水印提取與比對邏輯
+- [x] 建立 `WatermarkHandler` (`internal/api/watermark_handler.go`)
+- [x] 實作 `HandleDetect` API 端點
+- [x] 註冊 `/detect` 路由（含認證中介層）
+- [x] 實作 fx 依賴注入整合
+
+### 8.4 支援路徑檢測
+
+- [x] 修改 `WatermarkService` 介面支援 `DetectWatermarkFromPath` 方法
+- [x] 實作從 Storage 讀取檔案進行檢測
+- [x] 更新 `/detect` API 新增 `path` 參數支援
+- [x] 更新 Swagger 註解
+- [x] 撰寫 `watermark_service_test.go` 單元測試
+- [x] 驗證所有測試通過
 
 ---
 

@@ -148,12 +148,66 @@ func SecurityMiddleware(cfg *config.SecurityConfig, m metrics.Metrics) gin.Handl
 	}
 }
 
+// UploadAuthMiddleware 上傳驗證中介層
+// 驗證 Authorization: Bearer <SecurityKey> 標頭
+func UploadAuthMiddleware(securityKey string, m metrics.Metrics) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 取得 Authorization 標頭
+		authHeader := c.Request.Header.Get("Authorization")
+		if authHeader == "" {
+			if m != nil {
+				m.RecordRejectedRequest("missing_auth")
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "UNAUTHORIZED",
+				"message": "Missing Authorization header",
+			})
+			c.Abort()
+			return
+		}
+
+		// 驗證 Bearer Token 格式
+		const bearerPrefix = "Bearer "
+		if len(authHeader) <= len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
+			if m != nil {
+				m.RecordRejectedRequest("invalid_auth_format")
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "UNAUTHORIZED",
+				"message": "Invalid Authorization format, expected 'Bearer <token>'",
+			})
+			c.Abort()
+			return
+		}
+
+		// 取得 Token
+		token := authHeader[len(bearerPrefix):]
+
+		// 驗證 Token（使用 Security Key 作為 Token）
+		if token != securityKey {
+			if m != nil {
+				m.RecordRejectedRequest("invalid_token")
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "UNAUTHORIZED",
+				"message": "Invalid token",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
 // isSkippedPath 檢查是否為不需要安全驗證的路徑
 func isSkippedPath(path string) bool {
 	skippedPaths := []string{
 		"/healthz",
 		"/metrics",
 		"/swagger",
+		"/upload",
+		"/detect",
 	}
 
 	for _, p := range skippedPaths {
