@@ -38,10 +38,10 @@ func NewMemoryCache(cfg config.MemoryCacheConfig) (*MemoryCache, error) {
 	// BufferItems: 64 (預設值通常足夠)
 
 	c, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 1e7,     // number of keys to track frequency of (10M).
+		NumCounters: 1e7,         // number of keys to track frequency of (10M).
 		MaxCost:     cfg.MaxSize, // maximum cost of cache (In bytes).
-		BufferItems: 64,      // number of keys per Get buffer.
-		Metrics:     false, // enable if we want metrics later
+		BufferItems: 64,          // number of keys per Get buffer.
+		Metrics:     false,       // enable if we want metrics later
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ristretto cache: %w", err)

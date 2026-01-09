@@ -73,68 +73,79 @@ func NewProcessor(quality, maxWidth, maxHeight int) *Processor {
 }
 
 // Process 處理圖片
+// Process 處理圖片
 func (p *Processor) Process(r io.Reader, opts ProcessOptions) (image.Image, error) {
-	// 讀取標頭以偵測格式
-	// 為了能重複讀取，我們需要將 reader 內容讀入 buffer
-	// 這裡假設 SVG 檔案不會非常大，對於極大檔案可能需要優化
-	// 實務上我們通常會先 peek，但因為 oksvg 需要 reader，
-	// 且 image.Decode 也需要 reader，所以用 bytes.Reader 最簡單
+	// 讀取圖片資料
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read image data: %w", err)
 	}
-	r = bytes.NewReader(data)
 
-	var img image.Image
-
-	// 嘗試偵測是否為 SVG
-	if isSVG(data) {
-		img, err = p.decodeSVG(bytes.NewReader(data), opts.Width, opts.Height)
-		if err != nil {
-			zlogger.Warn("Failed to decode as SVG, falling back to image.Decode", zlogger.Err(err))
-			// Fallback to standard decode if SVG parsing fails but it looked like SVG
-			r = bytes.NewReader(data)
-			img, _, err = image.Decode(r)
-		}
-	} else {
-		// 標準解碼
-		img, _, err = image.Decode(r)
+	// 1. 解碼圖片
+	img, err := p.decodeImage(data, opts)
+	if err != nil {
+		return nil, err
 	}
 
+	// 2. 應用裁切 (Smart Crop 或 手動裁切)
+	img = p.applyCropping(img, opts)
+
+	// 3. 應用變形 (縮放、翻轉)
+	img = p.applyTransformations(img, opts)
+
+	return img, nil
+}
+
+// decodeImage 解碼圖片 (支援 SVG 偵測與 fallback)
+func (p *Processor) decodeImage(data []byte, opts ProcessOptions) (image.Image, error) {
+	if isSVG(data) {
+		img, err := p.decodeSVG(bytes.NewReader(data), opts.Width, opts.Height)
+		if err == nil {
+			return img, nil
+		}
+		zlogger.Warn("Failed to decode as SVG, falling back to image.Decode", zlogger.Err(err))
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
+	return img, nil
+}
 
-	// 執行 Smart Crop (優先於手動裁切)
-	if opts.Smart && (opts.Width > 0 && opts.Height > 0) {
-		// Smart Crop 需要知道目標寬高比，這裡我們使用目標寬高來計算
-		// 注意：Smart Crop 會直接返回裁切後的圖片（或裁切區域），
-		// 但為了保持流程一致，我們這裡只計算裁切區域，然後呼叫 crop
-		// 或者直接使用 smartCrop helper
-
-		// 由於 smartcrop 庫通常返回最佳裁切區域，我們這裡實作一個 smartCrop helper
+// applyCropping 應用裁切邏輯
+func (p *Processor) applyCropping(img image.Image, opts ProcessOptions) image.Image {
+	// Priority: Smart Crop > Manual Crop
+	if opts.Smart && opts.Width > 0 && opts.Height > 0 {
 		smartImg, err := p.smartCrop(img, opts.Width, opts.Height)
-		if err != nil {
-			zlogger.Warn("Smart crop failed, falling back to standard processing", zlogger.Err(err))
-		} else {
-			img = smartImg
-			// Smart Crop 已經完成了裁切與縮放的主要部分(視實作而定)，
-			// 但通常我們只用它來裁切，然後由 resize 確保最終尺寸
-			// 這裡假設 smartCrop 只做裁切，不做縮放，或者我們需要檢查
+		if err == nil {
+			return smartImg
 		}
-	} else if opts.CropLeft > 0 || opts.CropTop > 0 || opts.CropRight > 0 || opts.CropBottom > 0 {
-		// 執行手動裁切
-		img = p.crop(img, opts.CropLeft, opts.CropTop, opts.CropRight, opts.CropBottom)
+		zlogger.Warn("Smart crop failed, falling back to standard processing", zlogger.Err(err))
+		// Fall through to check manual crop (behavior preservation check: original code seemingly skipped manual crop if smart block entered?
+		// Original code: if smart { ... } else if manual { ... }
+		// Use nested structure to exactly match logic: if smart attempted, we don't do manual even if failed?
+		// "if opts.Smart ... { if err != nil { warn } else { img = smartImg } } else if manual ..."
+		// Yes, if smart is requested, manual is skipped even if smart failed in the original code structure.
+		// However, it's cleaner to just return img if smart failed, effectively skipping manual crop.
+		return img
 	}
 
-	// 執行縮放
-	// 注意: 如果是 SVG 且已經在 decodeSVG 中指定了尺寸，這裡的 resize 可能會再次執行
-	// 但通常這沒問題，因為 decodeSVG 生成的已經是目標尺寸，resize 會檢查後直接返回
+	if opts.CropLeft > 0 || opts.CropTop > 0 || opts.CropRight > 0 || opts.CropBottom > 0 {
+		return p.crop(img, opts.CropLeft, opts.CropTop, opts.CropRight, opts.CropBottom)
+	}
+
+	return img
+}
+
+// applyTransformations 應用縮放與翻轉
+func (p *Processor) applyTransformations(img image.Image, opts ProcessOptions) image.Image {
+	// 縮放
 	if opts.Width > 0 || opts.Height > 0 {
 		img = p.resize(img, opts.Width, opts.Height, opts.FitIn)
 	}
 
-	// 執行翻轉
+	// 翻轉
 	if opts.FlipH {
 		img = p.flipHorizontal(img)
 	}
@@ -142,7 +153,7 @@ func (p *Processor) Process(r io.Reader, opts ProcessOptions) (image.Image, erro
 		img = p.flipVertical(img)
 	}
 
-	return img, nil
+	return img
 }
 
 // DecodeImage 解碼圖片資料
@@ -318,12 +329,12 @@ func (p *Processor) decodeSVG(r io.Reader, width, height int) (image.Image, erro
 	// 如果 svg 沒有 viewBox，回退到預設值? 或者直接使用寬高
 	// oksvg struct doesn't export W/H directly if ViewBox is present?
 	// Checking source: SvgIcon has ViewBox struct which has W/H.
-    // Actually SvgIcon struct definitions might differ.
-    // Assuming ViewBox.W/H is sufficient for now.
-    // If w/h is 0, we might need a default or error.
+	// Actually SvgIcon struct definitions might differ.
+	// Assuming ViewBox.W/H is sufficient for now.
+	// If w/h is 0, we might need a default or error.
 	if w == 0 || h == 0 {
 		// Default fallback if ViewBox is missing/empty
-        w, h = 100, 100
+		w, h = 100, 100
 	}
 
 	targetW, targetH := float64(w), float64(h)

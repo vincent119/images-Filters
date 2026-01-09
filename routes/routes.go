@@ -39,8 +39,6 @@ func Setup(engine *gin.Engine, imageService service.ImageService, watermarkServi
 		engine.Use(metrics.GinMiddleware(m))
 	}
 
-
-
 	// 健康檢查端點
 	engine.GET("/healthz", handler.HealthCheck)
 

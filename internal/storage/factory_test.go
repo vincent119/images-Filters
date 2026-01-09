@@ -15,9 +15,9 @@ func TestNewStorage(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	tests := []struct {
-		name        string
-		cfg         *config.Config
-		wantErr     bool
+		name         string
+		cfg          *config.Config
+		wantErr      bool
 		expectedType interface{} // We can check type if we export concrete types or use reflection
 	}{
 		{

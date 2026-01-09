@@ -207,8 +207,8 @@ func TestProcessor_Process_Resize(t *testing.T) {
 	img := createTestImage(100, 100)
 
 	opts := ProcessOptions{
-		Width:  50,
-		Height: 50,
+		Width:   50,
+		Height:  50,
 		Quality: 80,
 	}
 
@@ -243,9 +243,9 @@ func TestProcessor_Process_Crop(t *testing.T) {
 	// In Processor.go, CropLeft/Top/Right/Bottom are used for manual crop
 	// See line 125-127 in processor.go view
 	opts := ProcessOptions{
-		CropLeft: 10,
-		CropTop:  10,
-		CropRight: 90,
+		CropLeft:   10,
+		CropTop:    10,
+		CropRight:  90,
 		CropBottom: 90,
 	}
 

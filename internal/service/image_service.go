@@ -35,7 +35,6 @@ type imageService struct {
 	sem       chan struct{} // Semaphore for concurrency control
 }
 
-
 // UploadImage 上傳圖片並回傳簽名 URL
 func (s *imageService) UploadImage(ctx context.Context, filename string, contentType string, reader io.Reader) (*UploadResult, error) {
 	var inputReader io.Reader = reader
@@ -127,8 +126,6 @@ func (s *imageService) UploadImage(ctx context.Context, filename string, content
 	}, nil
 }
 
-
-
 // NewImageService 建立圖片處理服務
 func NewImageService(cfg *config.Config, store storage.Storage, c cache.Cache, opts ...ServiceOption) ImageService {
 	// 處理選項
@@ -190,40 +187,16 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		logger.Bool("fit_in", parsedURL.FitIn),
 	)
 
-	// 1. 檢查快取 (Cache Hit)
 	resultKey := s.generateKey(parsedURL)
-	cacheStart := time.Now()
-	if data, err := s.cache.Get(ctx, resultKey); err == nil {
-		logger.Debug("cache hit", logger.String("key", resultKey))
-		if s.metrics != nil {
-			s.metrics.RecordCacheHit("memory")
-			s.metrics.RecordCacheLatency("get", "memory", time.Since(cacheStart).Seconds())
-		}
-		format := s.determineFormat(parsedURL)
-		return data, processor.GetContentType(format), nil
-	}
-	if s.metrics != nil {
-		s.metrics.RecordCacheMiss("memory")
-		s.metrics.RecordCacheLatency("get", "memory", time.Since(cacheStart).Seconds())
+
+	// 1. 檢查快取
+	if data, contentType, hit := s.checkCache(ctx, resultKey, parsedURL); hit {
+		return data, contentType, nil
 	}
 
-	// 2. 檢查持久化儲存 (Persistent Cache)
-	storageStart := time.Now()
-	if data, err := s.storage.Get(ctx, resultKey); err == nil {
-		logger.Debug("storage hit", logger.String("key", resultKey))
-		if s.metrics != nil {
-			s.metrics.RecordStorageOperation("local", "get")
-			s.metrics.RecordStorageLatency("local", "get", time.Since(storageStart).Seconds())
-		}
-		format := s.determineFormat(parsedURL)
-		// 回寫快取 (Cache Miss but Storage Hit)
-		if err := s.cache.Set(ctx, resultKey, data, 0); err != nil {
-			logger.Warn("failed to set cache", logger.Err(err))
-		}
-		return data, processor.GetContentType(format), nil
-	}
-	if s.metrics != nil {
-		s.metrics.RecordStorageLatency("local", "get", time.Since(storageStart).Seconds())
+	// 2. 檢查持久化儲存
+	if data, contentType, hit := s.checkStorage(ctx, resultKey, parsedURL); hit {
+		return data, contentType, nil
 	}
 
 	// 3. 限制並發處理 (Worker Pool)
@@ -235,7 +208,85 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		return nil, "", ctx.Err()
 	}
 
-	// 4. 載入圖片 (Source)
+	// 4. 載入圖片Source
+	imageReader, err := s.loadSourceImage(ctx, parsedURL)
+	if err != nil {
+		return nil, "", err
+	}
+	defer imageReader.Close()
+
+	// 5. 處理與編碼
+	outputData, format, err := s.processAndEncode(imageReader, parsedURL)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// 6. 取得 Content-Type
+	contentType := processor.GetContentType(format)
+
+	// 7. 記錄指標
+	if s.metrics != nil {
+		s.metrics.RecordImageProcessed(format, int64(len(outputData)))
+	}
+
+	// 8. 非同步儲存結果
+	s.saveAsync(resultKey, outputData)
+
+	logger.Debug("image processing completed",
+		logger.String("image_path", parsedURL.ImagePath),
+		logger.String("result_key", resultKey),
+		logger.String("format", format),
+		logger.Int("output_size", len(outputData)),
+	)
+
+	return outputData, contentType, nil
+}
+
+func (s *imageService) checkCache(ctx context.Context, key string, parsedURL *parser.ParsedURL) ([]byte, string, bool) {
+	cacheStart := time.Now()
+	data, err := s.cache.Get(ctx, key)
+	if err == nil {
+		logger.Debug("cache hit", logger.String("key", key))
+		if s.metrics != nil {
+			s.metrics.RecordCacheHit("memory")
+			s.metrics.RecordCacheLatency("get", "memory", time.Since(cacheStart).Seconds())
+		}
+		format := s.determineFormat(parsedURL)
+		return data, processor.GetContentType(format), true
+	}
+
+	if s.metrics != nil {
+		s.metrics.RecordCacheMiss("memory")
+		s.metrics.RecordCacheLatency("get", "memory", time.Since(cacheStart).Seconds())
+	}
+	return nil, "", false
+}
+
+func (s *imageService) checkStorage(ctx context.Context, key string, parsedURL *parser.ParsedURL) ([]byte, string, bool) {
+	storageStart := time.Now()
+	data, err := s.storage.Get(ctx, key)
+	if err == nil {
+		logger.Debug("storage hit", logger.String("key", key))
+		if s.metrics != nil {
+			s.metrics.RecordStorageOperation("local", "get")
+			s.metrics.RecordStorageLatency("local", "get", time.Since(storageStart).Seconds())
+		}
+		format := s.determineFormat(parsedURL)
+
+		// 回寫快取 (Cache Miss but Storage Hit)
+		if err := s.cache.Set(ctx, key, data, 0); err != nil {
+			logger.Warn("failed to set cache", logger.Err(err))
+		}
+		return data, processor.GetContentType(format), true
+	}
+
+	if s.metrics != nil {
+		s.metrics.RecordStorageLatency("local", "get", time.Since(storageStart).Seconds())
+	}
+	return nil, "", false
+}
+
+func (s *imageService) loadSourceImage(ctx context.Context, parsedURL *parser.ParsedURL) (io.ReadCloser, error) {
 	var imageReader io.ReadCloser
 	var err error
 
@@ -262,15 +313,17 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		if s.metrics != nil {
 			s.metrics.RecordError("load_error")
 		}
-		return nil, "", fmt.Errorf("failed to load image: %w", err)
+		return nil, fmt.Errorf("failed to load image: %w", err)
 	}
-	defer imageReader.Close()
 
 	logger.Debug("image stream loaded successfully",
 		logger.String("image_path", parsedURL.ImagePath),
 	)
+	return imageReader, nil
+}
 
-	// 5. 建立處理選項
+func (s *imageService) processAndEncode(reader io.Reader, parsedURL *parser.ParsedURL) ([]byte, string, error) {
+	// 建立處理選項
 	opts := processor.ProcessOptions{
 		Width:      parsedURL.Width,
 		Height:     parsedURL.Height,
@@ -288,33 +341,16 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 
 	// 記錄處理操作類型
 	if s.metrics != nil {
-		if opts.Width > 0 || opts.Height > 0 {
-			s.metrics.RecordProcessingOperation("resize")
-		}
-		if opts.CropLeft > 0 || opts.CropTop > 0 || opts.CropRight > 0 || opts.CropBottom > 0 {
-			s.metrics.RecordProcessingOperation("crop")
-		}
-		if opts.FlipH {
-			s.metrics.RecordProcessingOperation("flip_h")
-		}
-		if opts.FlipV {
-			s.metrics.RecordProcessingOperation("flip_v")
-		}
-		if opts.Smart {
-			s.metrics.RecordProcessingOperation("smart_crop")
-		}
-		for _, f := range parsedURL.Filters {
-			s.metrics.RecordProcessingOperation(f.Name)
-		}
+		s.recordProcessingMetrics(opts, parsedURL)
 	}
 
-	// 6. 處理圖片（含階段耗時計量）
+	// 處理圖片（含階段耗時計量）
 	decodeStart := time.Now()
-	// Processor.Process now accepts io.Reader
-	processedImage, err := s.processor.Process(imageReader, opts)
+	processedImage, err := s.processor.Process(reader, opts)
 	if s.metrics != nil {
 		s.metrics.RecordProcessingDuration("decode_transform", time.Since(decodeStart).Seconds())
 	}
+
 	if err != nil {
 		logger.Error("failed to process image",
 			logger.String("image_path", parsedURL.ImagePath),
@@ -333,12 +369,13 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		s.metrics.RecordOutputImageSize(bounds.Dx(), bounds.Dy())
 	}
 
-	// 7. 編碼輸出
+	// 編碼輸出
 	encodeStart := time.Now()
 	outputData, err := s.processor.Encode(processedImage, opts.Format, opts.Quality)
 	if s.metrics != nil {
 		s.metrics.RecordProcessingDuration("encode", time.Since(encodeStart).Seconds())
 	}
+
 	if err != nil {
 		logger.Error("failed to encode image",
 			logger.String("format", opts.Format),
@@ -351,37 +388,44 @@ func (s *imageService) ProcessImage(ctx context.Context, parsedURL *parser.Parse
 		return nil, "", fmt.Errorf("failed to encode image: %w", err)
 	}
 
-	// 5. 取得 Content-Type
-	contentType := processor.GetContentType(opts.Format)
+	return outputData, opts.Format, nil
+}
 
-	// 6. 記錄圖片處理指標
-	if s.metrics != nil {
-		s.metrics.RecordImageProcessed(opts.Format, int64(len(outputData)))
+func (s *imageService) recordProcessingMetrics(opts processor.ProcessOptions, parsedURL *parser.ParsedURL) {
+	if opts.Width > 0 || opts.Height > 0 {
+		s.metrics.RecordProcessingOperation("resize")
 	}
+	if opts.CropLeft > 0 || opts.CropTop > 0 || opts.CropRight > 0 || opts.CropBottom > 0 {
+		s.metrics.RecordProcessingOperation("crop")
+	}
+	if opts.FlipH {
+		s.metrics.RecordProcessingOperation("flip_h")
+	}
+	if opts.FlipV {
+		s.metrics.RecordProcessingOperation("flip_v")
+	}
+	if opts.Smart {
+		s.metrics.RecordProcessingOperation("smart_crop")
+	}
+	for _, f := range parsedURL.Filters {
+		s.metrics.RecordProcessingOperation(f.Name)
+	}
+}
 
-	// 7. 儲存結果 (Async)
+func (s *imageService) saveAsync(key string, data []byte) {
 	go func() {
 		// 寫入儲存
-		if err := s.storage.Put(context.Background(), resultKey, outputData); err != nil {
+		if err := s.storage.Put(context.Background(), key, data); err != nil {
 			logger.Warn("failed to save image to storage",
-				logger.String("key", resultKey),
+				logger.String("key", key),
 				logger.Err(err),
 			)
 		}
 		// 寫入快取
-		if err := s.cache.Set(context.Background(), resultKey, outputData, 0); err != nil {
-			logger.Warn("failed to set cache", logger.String("key", resultKey), logger.Err(err))
+		if err := s.cache.Set(context.Background(), key, data, 0); err != nil {
+			logger.Warn("failed to set cache", logger.String("key", key), logger.Err(err))
 		}
 	}()
-
-	logger.Debug("image processing completed",
-		logger.String("image_path", parsedURL.ImagePath),
-		logger.String("result_key", resultKey),
-		logger.String("format", opts.Format),
-		logger.Int("output_size", len(outputData)),
-	)
-
-	return outputData, contentType, nil
 }
 
 // determineFormat 決定輸出格式
@@ -483,12 +527,6 @@ func (s *imageService) generateKey(p *parser.ParsedURL) string {
 	hash := sha256.Sum256([]byte(paramStr))
 	hashStr := hex.EncodeToString(hash[:])[:16]
 
-	// 加上副檔名
-	ext := filepath.Ext(base)
-	if ext == "" {
-		ext = fmt.Sprintf(".%s", format)
-	}
-
 	// 結果：cache/hash/filename
 	// 為了避免單一目錄過大，可以使用 hash 前綴分層
 	return fmt.Sprintf("cache/%s/%s/%s", hashStr[:2], hashStr[2:], filepath.Base(base))
@@ -507,7 +545,6 @@ func isValidFormat(format string) bool {
 	}
 	return validFormats[strings.ToLower(format)]
 }
-
 
 // generateSignedURL 產生簽名 URL
 func (s *imageService) generateSignedURL(imagePath string) string {

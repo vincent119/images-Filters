@@ -18,22 +18,22 @@ type PrometheusMetrics struct {
 	httpResponseSize    *prometheus.HistogramVec // 回應大小
 
 	// ======== 圖片處理核心指標 ========
-	imageProcessedTotal    *prometheus.CounterVec   // 處理圖片總數（按類型）
-	imageSizeBytes         *prometheus.HistogramVec // 圖片大小分佈
-	processingDuration     *prometheus.HistogramVec // 處理階段耗時
-	processingOperations   *prometheus.CounterVec   // 處理操作計數
-	processingErrors       *prometheus.CounterVec   // 處理錯誤分類
-	inputImageDimensions   *prometheus.HistogramVec // 輸入圖片尺寸
-	outputImageDimensions  *prometheus.HistogramVec // 輸出圖片尺寸
+	imageProcessedTotal   *prometheus.CounterVec   // 處理圖片總數（按類型）
+	imageSizeBytes        *prometheus.HistogramVec // 圖片大小分佈
+	processingDuration    *prometheus.HistogramVec // 處理階段耗時
+	processingOperations  *prometheus.CounterVec   // 處理操作計數
+	processingErrors      *prometheus.CounterVec   // 處理錯誤分類
+	inputImageDimensions  *prometheus.HistogramVec // 輸入圖片尺寸
+	outputImageDimensions *prometheus.HistogramVec // 輸出圖片尺寸
 
 	// ======== 錯誤相關指標 ========
 	errorsTotal *prometheus.CounterVec // 錯誤總數
 
 	// ======== 快取（Cache）指標 ========
-	cacheHitsTotal    *prometheus.CounterVec   // 快取命中
-	cacheMissesTotal  *prometheus.CounterVec   // 快取未命中
-	cacheLatency      *prometheus.HistogramVec // 快取延遲
-	cacheEvictions    *prometheus.CounterVec   // 快取淘汰
+	cacheHitsTotal   *prometheus.CounterVec   // 快取命中
+	cacheMissesTotal *prometheus.CounterVec   // 快取未命中
+	cacheLatency     *prometheus.HistogramVec // 快取延遲
+	cacheEvictions   *prometheus.CounterVec   // 快取淘汰
 
 	// ======== 儲存後端指標 ========
 	storageOperations *prometheus.CounterVec   // 儲存操作計數

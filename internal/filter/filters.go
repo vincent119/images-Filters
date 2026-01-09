@@ -223,5 +223,3 @@ func clampUint8(value int) uint8 {
 	}
 	return uint8(value)
 }
-
-

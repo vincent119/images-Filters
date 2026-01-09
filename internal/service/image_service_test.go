@@ -15,7 +15,7 @@ import (
 
 // MockCache 模擬快取
 type MockCache struct {
-	data map[string][]byte
+	data    map[string][]byte
 	GetFunc func(ctx context.Context, key string) ([]byte, error)
 	SetFunc func(ctx context.Context, key string, value []byte, ttl time.Duration) error
 }
@@ -109,13 +109,13 @@ func TestProcessImage_CacheHit(t *testing.T) {
 	cfg := &config.Config{
 		Processing: config.ProcessingConfig{
 			DefaultQuality: 80,
-			MaxWidth: 1000,
-			MaxHeight: 1000,
-			DefaultFormat: "jpeg",
+			MaxWidth:       1000,
+			MaxHeight:      1000,
+			DefaultFormat:  "jpeg",
 		},
-		Server: config.ServerConfig{MaxRequestSize: 1024*1024},
+		Server: config.ServerConfig{MaxRequestSize: 1024 * 1024},
 		Storage: config.StorageConfig{
-			Type: "local",
+			Type:  "local",
 			Local: config.LocalStorageConfig{RootPath: "/tmp"},
 		},
 	}
@@ -127,8 +127,8 @@ func TestProcessImage_CacheHit(t *testing.T) {
 	// Pre-populate cache
 	parsedURL := &parser.ParsedURL{
 		ImagePath: "test/image.jpg",
-		Width: 100,
-		Height: 100,
+		Width:     100,
+		Height:    100,
 	}
 
 	// Access internal generateKey
@@ -198,13 +198,13 @@ func TestProcessImage_StorageHit_CacheMiss(t *testing.T) {
 	cfg := &config.Config{
 		Processing: config.ProcessingConfig{
 			DefaultQuality: 80,
-			MaxWidth: 1000,
-			MaxHeight: 1000,
-			DefaultFormat: "jpeg",
+			MaxWidth:       1000,
+			MaxHeight:      1000,
+			DefaultFormat:  "jpeg",
 		},
-		Server: config.ServerConfig{MaxRequestSize: 1024*1024},
+		Server: config.ServerConfig{MaxRequestSize: 1024 * 1024},
 		Storage: config.StorageConfig{
-			Type: "local",
+			Type:  "local",
 			Local: config.LocalStorageConfig{RootPath: "/tmp"},
 		},
 	}
@@ -215,8 +215,8 @@ func TestProcessImage_StorageHit_CacheMiss(t *testing.T) {
 
 	parsedURL := &parser.ParsedURL{
 		ImagePath: "test/image2.jpg",
-		Width: 200,
-		Height: 200,
+		Width:     200,
+		Height:    200,
 	}
 
 	impl, _ := svc.(*imageService)
@@ -277,7 +277,7 @@ func TestDetermineFormat(t *testing.T) {
 			filters: []parser.Filter{
 				{Name: "format", Params: []string{"png"}},
 			},
-			expected:     "png",
+			expected: "png",
 		},
 		{
 			name:         "Accept AVIF",
@@ -333,8 +333,8 @@ func TestUploadImage(t *testing.T) {
 			DefaultQuality: 80,
 		},
 		Security: config.SecurityConfig{
-			Enabled:        true,
-			SecurityKey:    "test-secret",
+			Enabled:     true,
+			SecurityKey: "test-secret",
 		},
 		BlindWatermark: config.BlindWatermarkConfig{
 			Enabled: false,

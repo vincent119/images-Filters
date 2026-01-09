@@ -65,7 +65,13 @@ func TestLoggerFunctions(t *testing.T) {
 		Info("info message", Int("count", 1))
 		Warn("warn message", Bool("active", true))
 		Error("error message", Any("obj", map[string]string{"a": "b"}))
-		// Fatal will exit, so we can't test it easily without execing a subprocess
+		// Fatal is tested in TestFatal
+	})
+}
+
+func TestSync(t *testing.T) {
+	assert.NotPanics(t, func() {
+		_ = Sync()
 	})
 }
 

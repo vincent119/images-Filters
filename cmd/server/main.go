@@ -47,12 +47,23 @@ func main() {
 type fxZapLogger struct{}
 
 func (l *fxZapLogger) LogEvent(event fxevent.Event) {
+	if l.logLifecycle(event) {
+		return
+	}
+	if l.logModule(event) {
+		return
+	}
+	l.logStatus(event)
+}
+
+func (l *fxZapLogger) logLifecycle(event fxevent.Event) bool {
 	switch e := event.(type) {
 	case *fxevent.OnStartExecuting:
 		logger.Debug("fx hook executing",
 			logger.String("callee", e.FunctionName),
 			logger.String("caller", e.CallerName),
 		)
+		return true
 	case *fxevent.OnStartExecuted:
 		if e.Err != nil {
 			logger.Error("fx hook failed",
@@ -67,11 +78,13 @@ func (l *fxZapLogger) LogEvent(event fxevent.Event) {
 				logger.String("runtime", e.Runtime.String()),
 			)
 		}
+		return true
 	case *fxevent.OnStopExecuting:
 		logger.Debug("fx hook stopping",
 			logger.String("callee", e.FunctionName),
 			logger.String("caller", e.CallerName),
 		)
+		return true
 	case *fxevent.OnStopExecuted:
 		if e.Err != nil {
 			logger.Error("fx hook stop failed",
@@ -86,6 +99,13 @@ func (l *fxZapLogger) LogEvent(event fxevent.Event) {
 				logger.String("runtime", e.Runtime.String()),
 			)
 		}
+		return true
+	}
+	return false
+}
+
+func (l *fxZapLogger) logModule(event fxevent.Event) bool {
+	switch e := event.(type) {
 	case *fxevent.Supplied:
 		if e.Err != nil {
 			logger.Error("fx supply failed",
@@ -93,6 +113,7 @@ func (l *fxZapLogger) LogEvent(event fxevent.Event) {
 				logger.Err(e.Err),
 			)
 		}
+		return true
 	case *fxevent.Provided:
 		if e.Err != nil {
 			logger.Error("fx provide failed",
@@ -107,10 +128,12 @@ func (l *fxZapLogger) LogEvent(event fxevent.Event) {
 				)
 			}
 		}
+		return true
 	case *fxevent.Invoking:
 		logger.Debug("fx invoking",
 			logger.String("function", e.FunctionName),
 		)
+		return true
 	case *fxevent.Invoked:
 		if e.Err != nil {
 			logger.Error("fx invoke failed",
@@ -118,6 +141,13 @@ func (l *fxZapLogger) LogEvent(event fxevent.Event) {
 				logger.Err(e.Err),
 			)
 		}
+		return true
+	}
+	return false
+}
+
+func (l *fxZapLogger) logStatus(event fxevent.Event) {
+	switch e := event.(type) {
 	case *fxevent.Stopping:
 		logger.Info("fx stopping",
 			logger.String("signal", strings.ToUpper(e.Signal.String())),

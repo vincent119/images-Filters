@@ -151,4 +151,3 @@ func verifyCmd(args []string, out io.Writer) int {
 		return 1
 	}
 }
-

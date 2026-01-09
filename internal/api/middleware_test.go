@@ -15,8 +15,8 @@ import (
 
 type MockMetrics struct {
 	metrics.Metrics // Embed interface if needed, or implement methods stub
-	rejected map[string]int
-	signatures map[bool]int
+	rejected        map[string]int
+	signatures      map[bool]int
 }
 
 // We need to implement all methods of Metrics interface or sufficient ones.
@@ -46,19 +46,19 @@ func (m *MockMetrics) RecordSignatureValidation(valid bool) {
 // Let's rely on nil check logic in middleware first.
 
 // Stub other methods to satisfy interface
-func (m *MockMetrics) RecordRequest(method, endpoint, status string) {}
-func (m *MockMetrics) RecordDuration(method, endpoint string, duration float64) {}
-func (m *MockMetrics) RecordError(errorType string) {}
-func (m *MockMetrics) RecordCacheHit(cacheType string) {}
-func (m *MockMetrics) RecordCacheMiss(cacheType string) {}
-func (m *MockMetrics) RecordCacheLatency(op, cacheType string, duration float64) {}
-func (m *MockMetrics) RecordStorageOperation(storageType, operation string) {}
+func (m *MockMetrics) RecordRequest(method, endpoint, status string)                        {}
+func (m *MockMetrics) RecordDuration(method, endpoint string, duration float64)             {}
+func (m *MockMetrics) RecordError(errorType string)                                         {}
+func (m *MockMetrics) RecordCacheHit(cacheType string)                                      {}
+func (m *MockMetrics) RecordCacheMiss(cacheType string)                                     {}
+func (m *MockMetrics) RecordCacheLatency(op, cacheType string, duration float64)            {}
+func (m *MockMetrics) RecordStorageOperation(storageType, operation string)                 {}
 func (m *MockMetrics) RecordStorageLatency(storageType, operation string, duration float64) {}
-func (m *MockMetrics) RecordProcessingDuration(stage string, duration float64) {}
-func (m *MockMetrics) RecordProcessingError(errorType string) {}
-func (m *MockMetrics) RecordImageProcessed(format string, size int64) {}
-func (m *MockMetrics) RecordProcessingOperation(operation string) {}
-func (m *MockMetrics) RecordOutputImageSize(width, height int) {}
+func (m *MockMetrics) RecordProcessingDuration(stage string, duration float64)              {}
+func (m *MockMetrics) RecordProcessingError(errorType string)                               {}
+func (m *MockMetrics) RecordImageProcessed(format string, size int64)                       {}
+func (m *MockMetrics) RecordProcessingOperation(operation string)                           {}
+func (m *MockMetrics) RecordOutputImageSize(width, height int)                              {}
 
 func TestCORSMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)

@@ -67,7 +67,7 @@ func NewHTTPServer(params HTTPServerParams) *http.Server {
 type RouteParams struct {
 	fx.In
 
-	Engine       *gin.Engine
+	Engine           *gin.Engine
 	ImageService     service.ImageService
 	WatermarkService service.WatermarkService
 	Config           *config.Config

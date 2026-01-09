@@ -9,6 +9,13 @@ import (
 )
 
 func main() {
+	if err := generateImage("test.jpg"); err != nil {
+		panic(err)
+	}
+	println("test.jpg generated")
+}
+
+func generateImage(filename string) error {
 	// 建立一個 800x600 的測試圖片
 	rect := image.Rect(0, 0, 800, 600)
 	img := image.NewRGBA(rect)
@@ -23,14 +30,11 @@ func main() {
 	draw.Draw(img, redRect, &image.Uniform{red}, image.Point{}, draw.Src)
 
 	// 存檔
-	f, err := os.Create("test.jpg")
+	f, err := os.Create(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer f.Close()
 
-	if err := jpeg.Encode(f, img, &jpeg.Options{Quality: 90}); err != nil {
-		panic(err)
-	}
-	println("test.jpg generated")
+	return jpeg.Encode(f, img, &jpeg.Options{Quality: 90})
 }

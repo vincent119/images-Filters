@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	"io"
 	"net/http"
@@ -235,7 +236,7 @@ func adjustAlpha(img image.Image, alpha float64) *image.NRGBA {
 			// 調整 alpha 通道
 			newAlpha := uint8(float64(a>>8) * alpha)
 
-			result.Set(x, y, nrgbaColor{
+			result.Set(x, y, color.NRGBA{
 				R: uint8(r >> 8),
 				G: uint8(g >> 8),
 				B: uint8(b >> 8),
@@ -245,22 +246,4 @@ func adjustAlpha(img image.Image, alpha float64) *image.NRGBA {
 	}
 
 	return result
-}
-
-// nrgbaColor 是 NRGBA 顏色結構
-type nrgbaColor struct {
-	R, G, B, A uint8
-}
-
-// RGBA implements color.Color interface
-func (c nrgbaColor) RGBA() (r, g, b, a uint32) {
-	r = uint32(c.R)
-	r |= r << 8
-	g = uint32(c.G)
-	g |= g << 8
-	b = uint32(c.B)
-	b |= b << 8
-	a = uint32(c.A)
-	a |= a << 8
-	return
 }

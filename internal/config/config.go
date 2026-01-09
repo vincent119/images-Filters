@@ -15,14 +15,14 @@ import (
 
 // Config 應用程式完整設定結構
 type Config struct {
-	Server     ServerConfig     `mapstructure:"server" validate:"required"`
-	Processing ProcessingConfig `mapstructure:"processing" validate:"required"`
-	Security   SecurityConfig   `mapstructure:"security"`
-	Storage    StorageConfig    `mapstructure:"storage" validate:"required"`
-	Cache      CacheConfig      `mapstructure:"cache"`
-	Logging    LoggingConfig    `mapstructure:"logging" validate:"required"`
-	Metrics    MetricsConfig        `mapstructure:"metrics"`
-	Swagger    SwaggerConfig        `mapstructure:"swagger"`
+	Server         ServerConfig         `mapstructure:"server" validate:"required"`
+	Processing     ProcessingConfig     `mapstructure:"processing" validate:"required"`
+	Security       SecurityConfig       `mapstructure:"security"`
+	Storage        StorageConfig        `mapstructure:"storage" validate:"required"`
+	Cache          CacheConfig          `mapstructure:"cache"`
+	Logging        LoggingConfig        `mapstructure:"logging" validate:"required"`
+	Metrics        MetricsConfig        `mapstructure:"metrics"`
+	Swagger        SwaggerConfig        `mapstructure:"swagger"`
 	BlindWatermark BlindWatermarkConfig `mapstructure:"blind_watermark"`
 }
 
@@ -311,13 +311,13 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("cache.redis.db", 0)
 	v.SetDefault("cache.redis.ttl", 3600)
 	// 連線池預設值
-	v.SetDefault("cache.redis.pool.size", 10)           // 預設 10 個連線
-	v.SetDefault("cache.redis.pool.min_idle_conns", 2)  // 預設最小 2 個閒置連線
-	v.SetDefault("cache.redis.pool.max_idle_conns", 5)  // 預設最大 5 個閒置連線
-	v.SetDefault("cache.redis.pool.timeout", 4)         // 4 秒
-	v.SetDefault("cache.redis.pool.conn_timeout", 5)    // 5 秒
-	v.SetDefault("cache.redis.pool.read_timeout", 3)    // 3 秒
-	v.SetDefault("cache.redis.pool.write_timeout", 3)   // 3 秒
+	v.SetDefault("cache.redis.pool.size", 10)          // 預設 10 個連線
+	v.SetDefault("cache.redis.pool.min_idle_conns", 2) // 預設最小 2 個閒置連線
+	v.SetDefault("cache.redis.pool.max_idle_conns", 5) // 預設最大 5 個閒置連線
+	v.SetDefault("cache.redis.pool.timeout", 4)        // 4 秒
+	v.SetDefault("cache.redis.pool.conn_timeout", 5)   // 5 秒
+	v.SetDefault("cache.redis.pool.read_timeout", 3)   // 3 秒
+	v.SetDefault("cache.redis.pool.write_timeout", 3)  // 3 秒
 	// TLS 預設值
 	v.SetDefault("cache.redis.tls.enabled", false)
 	v.SetDefault("cache.memory.max_size", 536870912) // 512MB

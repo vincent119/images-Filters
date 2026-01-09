@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -20,17 +21,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !cfg.Cache.Enabled {
-		fmt.Println("⚠️  Cache is NOT enabled in config.")
+	if err := runRedisTest(context.Background(), cfg, os.Stdout); err != nil {
+		fmt.Printf("❌ Redis test failed: %v\n", err)
 		os.Exit(1)
+	}
+	fmt.Println("🎉 Redis configuration verification passed!")
+}
+
+func runRedisTest(ctx context.Context, cfg *config.Config, w io.Writer) error {
+	if !cfg.Cache.Enabled {
+		return fmt.Errorf("cache is NOT enabled in config")
 	}
 
 	if cfg.Cache.Type != "redis" {
-		fmt.Printf("⚠️  Cache type is '%s', not 'redis'.\n", cfg.Cache.Type)
-		os.Exit(1)
+		return fmt.Errorf("cache type is '%s', not 'redis'", cfg.Cache.Type)
 	}
 
-	fmt.Printf("Configuration:\nHost: %s\nPort: %d\nDB: %d\n",
+	fmt.Fprintf(w, "Configuration:\nHost: %s\nPort: %d\nDB: %d\n",
 		cfg.Cache.Redis.Host,
 		cfg.Cache.Redis.Port,
 		cfg.Cache.Redis.DB,
@@ -39,54 +46,46 @@ func main() {
 	// 2. Initialize Redis Cache
 	rCache, err := cache.NewRedisCache(cfg.Cache.Redis)
 	if err != nil {
-		fmt.Printf("❌ Failed to connect to Redis: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to connect to Redis: %w", err)
 	}
-	fmt.Println("✅ Connected to Redis successfully")
+	fmt.Fprintf(w, "✅ Connected to Redis successfully\n")
 
 	// 3. Test Set
-	ctx := context.Background()
 	testKey := fmt.Sprintf("test-key-%d", time.Now().Unix())
 	testValue := []byte("hello-redis")
 
-	fmt.Printf("Setting key %s...\n", testKey)
+	fmt.Fprintf(w, "Setting key %s...\n", testKey)
 	if err := rCache.Set(ctx, testKey, testValue, 10*time.Second); err != nil {
-		fmt.Printf("❌ Failed to set key: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to set key: %w", err)
 	}
-	fmt.Println("✅ Set key successful")
+	fmt.Fprintf(w, "✅ Set key successful\n")
 
 	// 4. Test Get
-	fmt.Printf("Getting key %s...\n", testKey)
+	fmt.Fprintf(w, "Getting key %s...\n", testKey)
 	val, err := rCache.Get(ctx, testKey)
 	if err != nil {
-		fmt.Printf("❌ Failed to get key: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to get key: %w", err)
 	}
 	if string(val) != string(testValue) {
-		fmt.Printf("❌ Value mismatch. Expected %s, got %s\n", string(testValue), string(val))
-		os.Exit(1)
+		return fmt.Errorf("value mismatch. Expected %s, got %s", string(testValue), string(val))
 	}
-	fmt.Println("✅ Get key successful")
+	fmt.Fprintf(w, "✅ Get key successful\n")
 
 	// 5. Test Delete
-	fmt.Printf("Deleting key %s...\n", testKey)
+	fmt.Fprintf(w, "Deleting key %s...\n", testKey)
 	if err := rCache.Delete(ctx, testKey); err != nil {
-		fmt.Printf("❌ Failed to delete key: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to delete key: %w", err)
 	}
 
 	// Verify Delete
 	exists, err := rCache.Exists(ctx, testKey)
 	if err != nil {
-		fmt.Printf("❌ Failed to check existence: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to check existence: %w", err)
 	}
 	if exists {
-		fmt.Println("❌ Key should not exist after delete")
-		os.Exit(1)
+		return fmt.Errorf("key should not exist after delete")
 	}
-	fmt.Println("✅ Delete key successful")
+	fmt.Fprintf(w, "✅ Delete key successful\n")
 
-	fmt.Println("🎉 Redis configuration verification passed!")
+	return nil
 }

@@ -212,60 +212,70 @@ func TestURLParser_Parse(t *testing.T) {
 			}
 
 			// 比較結果
-			if result.IsUnsafe != tt.want.IsUnsafe {
-				t.Errorf("IsUnsafe = %v; want %v", result.IsUnsafe, tt.want.IsUnsafe)
-			}
-			if result.Signature != tt.want.Signature {
-				t.Errorf("Signature = %s; want %s", result.Signature, tt.want.Signature)
-			}
-			if result.Width != tt.want.Width {
-				t.Errorf("Width = %d; want %d", result.Width, tt.want.Width)
-			}
-			if result.Height != tt.want.Height {
-				t.Errorf("Height = %d; want %d", result.Height, tt.want.Height)
-			}
-			if result.FlipH != tt.want.FlipH {
-				t.Errorf("FlipH = %v; want %v", result.FlipH, tt.want.FlipH)
-			}
-			if result.FlipV != tt.want.FlipV {
-				t.Errorf("FlipV = %v; want %v", result.FlipV, tt.want.FlipV)
-			}
-			if result.FitIn != tt.want.FitIn {
-				t.Errorf("FitIn = %v; want %v", result.FitIn, tt.want.FitIn)
-			}
-			if result.Smart != tt.want.Smart {
-				t.Errorf("Smart = %v; want %v", result.Smart, tt.want.Smart)
-			}
-			if result.CropLeft != tt.want.CropLeft {
-				t.Errorf("CropLeft = %d; want %d", result.CropLeft, tt.want.CropLeft)
-			}
-			if result.CropTop != tt.want.CropTop {
-				t.Errorf("CropTop = %d; want %d", result.CropTop, tt.want.CropTop)
-			}
-			if result.CropRight != tt.want.CropRight {
-				t.Errorf("CropRight = %d; want %d", result.CropRight, tt.want.CropRight)
-			}
-			if result.CropBottom != tt.want.CropBottom {
-				t.Errorf("CropBottom = %d; want %d", result.CropBottom, tt.want.CropBottom)
-			}
-			if result.ImagePath != tt.want.ImagePath {
-				t.Errorf("ImagePath = %s; want %s", result.ImagePath, tt.want.ImagePath)
+			if err != nil {
+				t.Fatalf("解析錯誤: %v", err)
 			}
 
-			// 比較濾鏡
-			if len(result.Filters) != len(tt.want.Filters) {
-				t.Errorf("Filters count = %d; want %d", len(result.Filters), len(tt.want.Filters))
-			} else {
-				for i, filter := range result.Filters {
-					if filter.Name != tt.want.Filters[i].Name {
-						t.Errorf("Filter[%d].Name = %s; want %s", i, filter.Name, tt.want.Filters[i].Name)
-					}
-					if len(filter.Params) != len(tt.want.Filters[i].Params) {
-						t.Errorf("Filter[%d].Params count = %d; want %d", i, len(filter.Params), len(tt.want.Filters[i].Params))
-					}
-				}
-			}
+			// 比較結果
+			verifyParsedURL(t, result, tt.want)
 		})
+	}
+}
+
+func verifyParsedURL(t *testing.T, result, want *ParsedURL) {
+	t.Helper()
+	if result.IsUnsafe != want.IsUnsafe {
+		t.Errorf("IsUnsafe = %v; want %v", result.IsUnsafe, want.IsUnsafe)
+	}
+	if result.Signature != want.Signature {
+		t.Errorf("Signature = %s; want %s", result.Signature, want.Signature)
+	}
+	if result.Width != want.Width {
+		t.Errorf("Width = %d; want %d", result.Width, want.Width)
+	}
+	if result.Height != want.Height {
+		t.Errorf("Height = %d; want %d", result.Height, want.Height)
+	}
+	if result.FlipH != want.FlipH {
+		t.Errorf("FlipH = %v; want %v", result.FlipH, want.FlipH)
+	}
+	if result.FlipV != want.FlipV {
+		t.Errorf("FlipV = %v; want %v", result.FlipV, want.FlipV)
+	}
+	if result.FitIn != want.FitIn {
+		t.Errorf("FitIn = %v; want %v", result.FitIn, want.FitIn)
+	}
+	if result.Smart != want.Smart {
+		t.Errorf("Smart = %v; want %v", result.Smart, want.Smart)
+	}
+	if result.CropLeft != want.CropLeft {
+		t.Errorf("CropLeft = %d; want %d", result.CropLeft, want.CropLeft)
+	}
+	if result.CropTop != want.CropTop {
+		t.Errorf("CropTop = %d; want %d", result.CropTop, want.CropTop)
+	}
+	if result.CropRight != want.CropRight {
+		t.Errorf("CropRight = %d; want %d", result.CropRight, want.CropRight)
+	}
+	if result.CropBottom != want.CropBottom {
+		t.Errorf("CropBottom = %d; want %d", result.CropBottom, want.CropBottom)
+	}
+	if result.ImagePath != want.ImagePath {
+		t.Errorf("ImagePath = %s; want %s", result.ImagePath, want.ImagePath)
+	}
+
+	// 比較濾鏡
+	if len(result.Filters) != len(want.Filters) {
+		t.Errorf("Filters count = %d; want %d", len(result.Filters), len(want.Filters))
+	} else {
+		for i, filter := range result.Filters {
+			if filter.Name != want.Filters[i].Name {
+				t.Errorf("Filter[%d].Name = %s; want %s", i, filter.Name, want.Filters[i].Name)
+			}
+			if len(filter.Params) != len(want.Filters[i].Params) {
+				t.Errorf("Filter[%d].Params count = %d; want %d", i, len(filter.Params), len(want.Filters[i].Params))
+			}
+		}
 	}
 }
 

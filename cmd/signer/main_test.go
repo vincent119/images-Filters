@@ -138,7 +138,7 @@ func TestVerifyCmd(t *testing.T) {
 			wantOut:  "Invalid URL format",
 		},
 		{
-			name:     "Invalid Signature",
+			name: "Invalid Signature",
 			// Signature must be 44 chars long to pass format check
 			args:     []string{"verify", "-key", "secret", "-url", "/" + strings.Repeat("a", 44) + "/test.jpg"},
 			wantExit: 1,

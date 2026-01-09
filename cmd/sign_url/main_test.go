@@ -21,7 +21,7 @@ func TestRun(t *testing.T) {
 			wantOut:  "Usage:",
 		},
 		{
-			name:     "Missing Key and Config",
+			name: "Missing Key and Config",
 			// We point to non-existent config so it fails if key is also missing
 			args:     []string{"sign_url", "-path", "test.jpg", "-config", "nonexistent.yaml"},
 			wantExit: 1,

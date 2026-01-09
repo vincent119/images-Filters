@@ -49,5 +49,3 @@ func (s *NoStorage) PutStream(ctx context.Context, key string, r io.Reader) erro
 	}
 	return nil
 }
-
-
