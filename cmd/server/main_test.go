@@ -125,7 +125,7 @@ func TestFxZapLogger_LogEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "Stopped Success",
+			name:  "Stopped Success",
 			event: &fxevent.Stopped{},
 		},
 		{
@@ -141,7 +141,7 @@ func TestFxZapLogger_LogEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "RolledBack Success",
+			name:  "RolledBack Success",
 			event: &fxevent.RolledBack{},
 		},
 		{
@@ -151,7 +151,7 @@ func TestFxZapLogger_LogEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "Started Success",
+			name:  "Started Success",
 			event: &fxevent.Started{},
 		},
 		{
@@ -161,7 +161,7 @@ func TestFxZapLogger_LogEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "LoggerInitialized Success",
+			name:  "LoggerInitialized Success",
 			event: &fxevent.LoggerInitialized{},
 		},
 		{

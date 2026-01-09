@@ -68,15 +68,15 @@ func TestCalculatePosition(t *testing.T) {
 		wantX int
 		wantY int
 	}{
-		{PositionCenter, 450, 450},       // (1000-100)/2, (1000-100)/2
-		{PositionTopLeft, 10, 20},        // x, y
-		{PositionTopRight, 890, 20},      // 1000-100-10, y
-		{PositionBottomLeft, 10, 880},    // x, 1000-100-20
-		{PositionBottomRight, 890, 880},  // 1000-100-10, 1000-100-20
-		{PositionTop, 450, 20},           // center, y
-		{PositionBottom, 450, 880},       // center, bottom
-		{PositionLeft, 10, 450},          // x, center
-		{PositionRight, 890, 450},        // right, center
+		{PositionCenter, 450, 450},         // (1000-100)/2, (1000-100)/2
+		{PositionTopLeft, 10, 20},          // x, y
+		{PositionTopRight, 890, 20},        // 1000-100-10, y
+		{PositionBottomLeft, 10, 880},      // x, 1000-100-20
+		{PositionBottomRight, 890, 880},    // 1000-100-10, 1000-100-20
+		{PositionTop, 450, 20},             // center, y
+		{PositionBottom, 450, 880},         // center, bottom
+		{PositionLeft, 10, 450},            // x, center
+		{PositionRight, 890, 450},          // right, center
 		{WatermarkPosition(999), 890, 880}, // default to BottomRight
 	}
 

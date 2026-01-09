@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/stretchr/testify/assert"
 )
 
 // MockS3API mocks S3API interface for testing
@@ -94,126 +95,112 @@ func (m *MockS3API) DeleteObject(ctx context.Context, params *s3.DeleteObjectInp
 	return &s3.DeleteObjectOutput{}, nil
 }
 
-func TestS3Storage(t *testing.T) {
+func setupTestStorage() (*S3Storage, *MockS3API) {
 	mockAPI := NewMockS3API()
 	storage := &S3Storage{
 		client: mockAPI,
 		bucket: "test-bucket",
 	}
+	return storage, mockAPI
+}
 
+func TestS3Storage_Put(t *testing.T) {
+	storage, mockAPI := setupTestStorage()
 	ctx := context.Background()
 	testKey := "test/image.jpg"
 	testData := []byte("test image data")
 
-	// Test Put
-	t.Run("Put", func(t *testing.T) {
-		err := storage.Put(ctx, testKey, testData)
-		if err != nil {
-			t.Errorf("Put() error = %v", err)
-		}
+	err := storage.Put(ctx, testKey, testData)
+	assert.NoError(t, err)
 
-		// Verify data in mock
-		mockAPI.mu.RLock()
-		storedData, exists := mockAPI.objects[testKey]
-		mockAPI.mu.RUnlock()
+	// Verify data in mock
+	mockAPI.mu.RLock()
+	storedData, exists := mockAPI.objects[testKey]
+	mockAPI.mu.RUnlock()
 
-		if !exists {
-			t.Error("object should exist in mock")
-		}
-		if !bytes.Equal(storedData, testData) {
-			t.Errorf("stored data mismatch")
-		}
-	})
+	assert.True(t, exists, "object should exist in mock")
+	assert.Equal(t, testData, storedData, "stored data mismatch")
+}
 
-	// Test Exists
-	t.Run("Exists", func(t *testing.T) {
-		exists, err := storage.Exists(ctx, testKey)
-		if err != nil {
-			t.Errorf("Exists() error = %v", err)
-		}
-		if !exists {
-			t.Error("Exists() = false; want true")
-		}
+func TestS3Storage_Exists(t *testing.T) {
+	storage, _ := setupTestStorage()
+	ctx := context.Background()
+	testKey := "test/image.jpg"
+	testData := []byte("test image data")
 
-		exists, err = storage.Exists(ctx, "nonexistent.jpg")
-		if err != nil {
-			t.Errorf("Exists() error = %v", err)
-		}
-		if exists {
-			t.Error("Exists() = true; want false")
-		}
-	})
+	// Pre-populate
+	err := storage.Put(ctx, testKey, testData)
+	assert.NoError(t, err)
 
-	// Test Get
-	t.Run("Get", func(t *testing.T) {
-		data, err := storage.Get(ctx, testKey)
-		if err != nil {
-			t.Errorf("Get() error = %v", err)
-		}
-		if !bytes.Equal(data, testData) {
-			t.Errorf("Get() = %s; want %s", data, testData)
-		}
+	 exists, err := storage.Exists(ctx, testKey)
+	assert.NoError(t, err)
+	assert.True(t, exists)
 
-		_, err = storage.Get(ctx, "nonexistent.jpg")
-		if err == nil {
-			t.Error("Get() should return error for nonexistent key")
-		}
-	})
+	exists, err = storage.Exists(ctx, "nonexistent.jpg")
+	assert.NoError(t, err)
+	assert.False(t, exists)
+}
 
-	// Test Delete
-	t.Run("Delete", func(t *testing.T) {
-		err := storage.Delete(ctx, testKey)
-		if err != nil {
-			t.Errorf("Delete() error = %v", err)
-		}
+func TestS3Storage_Get(t *testing.T) {
+	storage, _ := setupTestStorage()
+	ctx := context.Background()
+	testKey := "test/image.jpg"
+	testData := []byte("test image data")
 
-		exists, _ := storage.Exists(ctx, testKey)
-		if exists {
-			t.Error("object should be deleted")
-		}
-	})
+	err := storage.Put(ctx, testKey, testData)
+	assert.NoError(t, err)
 
-	// Test Stream
-	t.Run("Stream", func(t *testing.T) {
-		streamKey := "stream/test.jpg"
-		streamData := []byte("stream data")
+	data, err := storage.Get(ctx, testKey)
+	assert.NoError(t, err)
+	assert.Equal(t, testData, data)
 
-		// PutStream
-		err := storage.PutStream(ctx, streamKey, bytes.NewReader(streamData))
-		if err != nil {
-			t.Errorf("PutStream() error = %v", err)
-		}
+	_, err = storage.Get(ctx, "nonexistent.jpg")
+	assert.Error(t, err)
+}
 
-		// Verify PutStream result via normal Get
-		mockAPI.mu.RLock()
-		storedData, exists := mockAPI.objects[streamKey]
-		mockAPI.mu.RUnlock()
-		if !exists {
-			t.Error("PutStream object should exist in mock")
-		}
-		if !bytes.Equal(storedData, streamData) {
-			t.Errorf("PutStream stored data mismatch")
-		}
+func TestS3Storage_Delete(t *testing.T) {
+	storage, _ := setupTestStorage()
+	ctx := context.Background()
+	testKey := "test/image.jpg"
+	testData := []byte("test image data")
 
-		// GetStream
-		rc, err := storage.GetStream(ctx, streamKey)
-		if err != nil {
-			t.Fatalf("GetStream() error = %v", err)
-		}
-		defer rc.Close()
+	err := storage.Put(ctx, testKey, testData)
+	assert.NoError(t, err)
 
-		readData, err := io.ReadAll(rc)
-		if err != nil {
-			t.Fatalf("ReadAll error = %v", err)
-		}
-		if !bytes.Equal(readData, streamData) {
-			t.Errorf("GetStream data mismatch")
-		}
+	err = storage.Delete(ctx, testKey)
+	assert.NoError(t, err)
 
-		// GetStream Not Found
-		_, err = storage.GetStream(ctx, "nonexistent-stream")
-		if err == nil {
-			t.Error("GetStream should error on not found")
-		}
-	})
+	exists, _ := storage.Exists(ctx, testKey)
+	assert.False(t, exists, "object should be deleted")
+}
+
+func TestS3Storage_Stream(t *testing.T) {
+	storage, mockAPI := setupTestStorage()
+	ctx := context.Background()
+	streamKey := "stream/test.jpg"
+	streamData := []byte("stream data")
+
+	// PutStream
+	err := storage.PutStream(ctx, streamKey, bytes.NewReader(streamData))
+	assert.NoError(t, err)
+
+	// Verify PutStream result via normal Get logic on mock
+	mockAPI.mu.RLock()
+	storedData, exists := mockAPI.objects[streamKey]
+	mockAPI.mu.RUnlock()
+	assert.True(t, exists, "PutStream object should exist in mock")
+	assert.Equal(t, streamData, storedData, "PutStream stored data mismatch")
+
+	// GetStream
+	rc, err := storage.GetStream(ctx, streamKey)
+	assert.NoError(t, err)
+	defer rc.Close()
+
+	readData, err := io.ReadAll(rc)
+	assert.NoError(t, err)
+	assert.Equal(t, streamData, readData)
+
+	// GetStream Not Found
+	_, err = storage.GetStream(ctx, "nonexistent-stream")
+	assert.Error(t, err)
 }
