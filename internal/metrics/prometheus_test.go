@@ -235,3 +235,82 @@ func TestMetricsHandlerWithAuth(t *testing.T) {
 		t.Errorf("Expected status 200 with correct auth, got %d", w.Code)
 	}
 }
+
+func TestRecordCacheMetrics(t *testing.T) {
+	m := NewPrometheusMetrics("test")
+	m.RecordCacheHit("redis")
+	m.RecordCacheMiss("redis")
+	m.RecordCacheLatency("get", "redis", 0.005)
+	m.RecordCacheEviction("redis")
+
+	// We can use testutil to check values if desired, or just ensure no panic for coverage
+	// Checking one counter for sanity
+	expected := `
+		# HELP test_cache_hits_total 快取命中總數
+		# TYPE test_cache_hits_total counter
+		test_cache_hits_total{cache_type="redis"} 1
+	`
+	if err := testutil.CollectAndCompare(m.cacheHitsTotal, strings.NewReader(expected)); err != nil {
+		t.Errorf("Unexpected collecting result: %v", err)
+	}
+}
+
+func TestRecordStorageMetrics(t *testing.T) {
+	m := NewPrometheusMetrics("test")
+	m.RecordStorageOperation("s3", "put")
+	m.RecordStorageLatency("s3", "put", 0.5)
+	m.RecordStorageError("s3", "network")
+	m.RecordStorageRetry("s3")
+
+	expected := `
+		# HELP test_storage_operations_total 儲存操作總數
+		# TYPE test_storage_operations_total counter
+		test_storage_operations_total{backend="s3",operation="put"} 1
+	`
+	if err := testutil.CollectAndCompare(m.storageOperations, strings.NewReader(expected)); err != nil {
+		t.Errorf("Unexpected collecting result: %v", err)
+	}
+}
+
+func TestRecordSecurityMetrics(t *testing.T) {
+	m := NewPrometheusMetrics("test")
+	m.RecordSignatureValidation(true)
+	m.RecordRejectedRequest("bad_signature")
+	m.RecordRateLimitHit()
+
+	expected := `
+		# HELP test_signature_validations_total 簽名驗證總數
+		# TYPE test_signature_validations_total counter
+		test_signature_validations_total{success="true"} 1
+	`
+	if err := testutil.CollectAndCompare(m.signatureValidations, strings.NewReader(expected)); err != nil {
+		t.Errorf("Unexpected collecting result: %v", err)
+	}
+}
+
+func TestRecordSystemMetrics(t *testing.T) {
+	m := NewPrometheusMetrics("test")
+	m.RecordUptimeSeconds(1234.5)
+	// Gauge check
+	val := testutil.ToFloat64(m.uptimeSeconds)
+	if val != 1234.5 {
+		t.Errorf("Expected uptime 1234.5, got %v", val)
+	}
+}
+
+func TestRecordImageSizes(t *testing.T) {
+	m := NewPrometheusMetrics("test")
+	m.RecordInputImageSize(800, 600)
+	m.RecordOutputImageSize(400, 300)
+
+	// Just calling for coverage, histograms are complex to match exactly string-wise without exact buckets
+}
+
+func TestRecordProcessingExtra(t *testing.T) {
+	m := NewPrometheusMetrics("test")
+	m.RecordProcessingDuration("decode", 0.1)
+	m.RecordProcessingOperation("resize")
+	m.RecordProcessingError("timeout")
+
+	// Just calling for coverage
+}

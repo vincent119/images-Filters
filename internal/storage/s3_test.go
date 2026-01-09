@@ -172,4 +172,48 @@ func TestS3Storage(t *testing.T) {
 			t.Error("object should be deleted")
 		}
 	})
+
+	// Test Stream
+	t.Run("Stream", func(t *testing.T) {
+		streamKey := "stream/test.jpg"
+		streamData := []byte("stream data")
+
+		// PutStream
+		err := storage.PutStream(ctx, streamKey, bytes.NewReader(streamData))
+		if err != nil {
+			t.Errorf("PutStream() error = %v", err)
+		}
+
+		// Verify PutStream result via normal Get
+		mockAPI.mu.RLock()
+		storedData, exists := mockAPI.objects[streamKey]
+		mockAPI.mu.RUnlock()
+		if !exists {
+			t.Error("PutStream object should exist in mock")
+		}
+		if !bytes.Equal(storedData, streamData) {
+			t.Errorf("PutStream stored data mismatch")
+		}
+
+		// GetStream
+		rc, err := storage.GetStream(ctx, streamKey)
+		if err != nil {
+			t.Fatalf("GetStream() error = %v", err)
+		}
+		defer rc.Close()
+
+		readData, err := io.ReadAll(rc)
+		if err != nil {
+			t.Fatalf("ReadAll error = %v", err)
+		}
+		if !bytes.Equal(readData, streamData) {
+			t.Errorf("GetStream data mismatch")
+		}
+
+		// GetStream Not Found
+		_, err = storage.GetStream(ctx, "nonexistent-stream")
+		if err == nil {
+			t.Error("GetStream should error on not found")
+		}
+	})
 }

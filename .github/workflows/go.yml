@@ -22,4 +22,13 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: go test -v -race ./...
+      run: go test -v -race -coverprofile=coverage.out ./...
+
+    - name: Update Coverage Badge
+      if: github.ref == 'refs/heads/main'
+      env:
+        GIST_ID: ${{ secrets.GIST_ID }}
+        GH_TOKEN: ${{ secrets.GIST_TOKEN }}
+      run: |
+        chmod +x scripts/update-coverage-badge.sh
+        ./scripts/update-coverage-badge.sh

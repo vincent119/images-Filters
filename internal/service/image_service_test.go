@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -87,11 +88,20 @@ func (m *MockStorage) Delete(ctx context.Context, key string) error {
 }
 
 func (m *MockStorage) GetStream(ctx context.Context, key string) (io.ReadCloser, error) {
-	return nil, errors.New("not implemented")
+	if val, ok := m.data[key]; ok {
+		// Create a ReadCloser
+		return io.NopCloser(bytes.NewReader(val)), nil
+	}
+	return nil, errors.New("file not found")
 }
 
 func (m *MockStorage) PutStream(ctx context.Context, key string, r io.Reader) error {
-	return errors.New("not implemented")
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	m.data[key] = data
+	return nil
 }
 
 func TestProcessImage_CacheHit(t *testing.T) {
@@ -121,13 +131,49 @@ func TestProcessImage_CacheHit(t *testing.T) {
 		Height: 100,
 	}
 
-	// Generate key manually (or expose generateKey for testing, but let's rely on behavior)
-	// Actually we need to force a hit.
-	// Since generateKey is private, we can't easily predict the key hash without running the private method.
-	// However, we can use the private method if we are in the same package `service`.
-	// Yes, we are in `package service`.
+	// Access internal generateKey
+	type keyGenerator interface {
+		generateKey(p *parser.ParsedURL) string
+	}
 
-	impl := svc.(*imageService)
+	// We need to use reflection or copy logic if we can't access it.
+	// But tests in same package can access private methods.
+	// svc is ImageService interface, we need to assert to *imageService,
+	// but *imageService is private in service.go.
+	// Wait, internal/service/image_service.go:28 type imageService struct (lowercase)
+	// So we cannot cast it here in a separate package?
+	// Oh, `package service` in `image_service_test.go` means we ARE in the same package.
+	// But `NewImageService` returns interface.
+
+	// Reflection or accessing private fields/methods only works if the test file is in `package service`.
+	// Line 1 says `package service`. So we can access `imageService` struct.
+
+	// However, `svc` is declared as `ImageService` interface. We need to Type Assert.
+	// But `imageService` struct is unexported. Can we type assert to unexported struct?
+	// Yes, within the same package.
+
+	// EXCEPT: if the previous file content view showed `imageService` is unexported `type imageService struct`.
+	// Yes it is.
+
+	// Wait, I cannot type assert to unexported type if I am in `package service_test` (if it was separate).
+	// But here it is `package service`. So it should be fine.
+
+	// Let's try to find how to do it.
+	// Actually, `NewImageService` returns `ImageService` interface.
+	// In Go, you can type assert to a struct defined in the same package.
+
+	// BUT, note that in `image_service_test.go` provided before:
+	// `impl := svc.(*imageService)`
+	// This works if `TestProcessImage_CacheHit` is in `package service`.
+
+	// Let's check `image_service_test.go` first line.
+	// `package service`
+
+	impl, ok := svc.(*imageService)
+	if !ok {
+		t.Fatal("Failed to cast service to *imageService")
+	}
+
 	key := impl.generateKey(parsedURL)
 	cachedData := []byte("cached-image-data")
 	mockCache.data[key] = cachedData
@@ -173,7 +219,7 @@ func TestProcessImage_StorageHit_CacheMiss(t *testing.T) {
 		Height: 200,
 	}
 
-	impl := svc.(*imageService)
+	impl, _ := svc.(*imageService)
 	key := impl.generateKey(parsedURL)
 	storedData := []byte("stored-processed-data")
 
@@ -231,7 +277,7 @@ func TestDetermineFormat(t *testing.T) {
 			filters: []parser.Filter{
 				{Name: "format", Params: []string{"png"}},
 			},
-			expected: "png",
+			expected:     "png",
 		},
 		{
 			name:         "Accept AVIF",
@@ -277,5 +323,88 @@ func TestDetermineFormat(t *testing.T) {
 				t.Errorf("determineFormat() = %v, want %v", got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestUploadImage(t *testing.T) {
+	// Setup
+	cfg := &config.Config{
+		Processing: config.ProcessingConfig{
+			DefaultQuality: 80,
+		},
+		Security: config.SecurityConfig{
+			Enabled:        true,
+			SecurityKey:    "test-secret",
+		},
+		BlindWatermark: config.BlindWatermarkConfig{
+			Enabled: false,
+		},
+	}
+
+	mockStore := NewMockStorage()
+	mockCache := NewMockCache()
+	svc := NewImageService(cfg, mockStore, mockCache)
+
+	filename := "test.jpg"
+	contentType := "image/jpeg"
+	content := []byte("fake-image-content")
+	reader := bytes.NewReader(content)
+
+	// Execute
+	result, err := svc.UploadImage(context.Background(), filename, contentType, reader)
+
+	// Verify
+	if err != nil {
+		t.Fatalf("UploadImage failed: %v", err)
+	}
+	if result.Path == "" {
+		t.Error("Expected valid path")
+	}
+	if result.SignedURL == "" {
+		t.Error("Expected valid signed URL")
+	}
+
+	// Verify storage
+	if val, ok := mockStore.data[result.Path]; !ok {
+		t.Error("File not saved to storage")
+	} else if string(val) != string(content) {
+		t.Errorf("Content mismatch, got %s", string(val))
+	}
+}
+
+func TestGenerateSignedURL(t *testing.T) {
+	// 1. Unsafe Mode
+	cfgUnsafe := &config.Config{
+		Security: config.SecurityConfig{
+			Enabled: false,
+		},
+	}
+	svcUnsafe := &imageService{cfg: cfgUnsafe}
+	urlUnsafe := svcUnsafe.generateSignedURL("path/to/image.jpg")
+	if urlUnsafe != "/unsafe/path/to/image.jpg" {
+		t.Errorf("Expected /unsafe/path/to/image.jpg, got %s", urlUnsafe)
+	}
+
+	// 2. Secure Mode
+	key := "test-secret"
+	cfgSecure := &config.Config{
+		Security: config.SecurityConfig{
+			Enabled:     true,
+			SecurityKey: key,
+		},
+	}
+	svcSecure := &imageService{cfg: cfgSecure}
+	urlSecure := svcSecure.generateSignedURL("path/to/image.jpg")
+
+	// We don't want to re-implement signing logic here to check exact hash,
+	// but we can check if it follows structure /{sig}/{path}
+	// or verifies with same key.
+	if urlSecure == "" {
+		t.Error("Expected generated URL, got empty")
+	}
+	// Basic format check
+	// Should not contain "unsafe"
+	if bytes.Contains([]byte(urlSecure), []byte("unsafe")) {
+		t.Error("Secure URL should not contain unsafe")
 	}
 }

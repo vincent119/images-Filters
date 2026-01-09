@@ -47,6 +47,11 @@ test-cover:
 	$(GO) test -cover -coverprofile=coverage.out ./...
 	$(GO) tool cover -html=coverage.out -o coverage.html
 
+coverage:
+	@echo "==> running tests and generating coverage report..."
+	$(GO) test -cover -coverprofile=coverage.out ./...
+	$(GO) tool cover -func=coverage.out
+
 ## lint: running golangci-lint
 lint:
 	@echo "==> running golangci-lint..."

@@ -5,6 +5,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/vincent119/images-filters/internal/security"
@@ -31,37 +32,42 @@ Environment Variables:
 `
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Print(usage)
-		os.Exit(1)
+	os.Exit(run(os.Args, os.Stdout))
+}
+
+func run(args []string, out io.Writer) int {
+	if len(args) < 2 {
+		fmt.Fprint(out, usage)
+		return 1
 	}
 
-	command := os.Args[1]
+	command := args[1]
 
 	switch command {
 	case "sign":
-		signCmd()
+		return signCmd(args[2:], out)
 	case "verify":
-		verifyCmd()
+		return verifyCmd(args[2:], out)
 	case "help", "-h", "--help":
-		fmt.Print(usage)
+		fmt.Fprint(out, usage)
+		return 0
 	default:
-		fmt.Printf("Unknown command: %s\n\n", command)
-		fmt.Print(usage)
-		os.Exit(1)
+		fmt.Fprintf(out, "Unknown command: %s\n\n", command)
+		fmt.Fprint(out, usage)
+		return 1
 	}
 }
 
-func signCmd() {
-	signFlags := flag.NewFlagSet("sign", flag.ExitOnError)
+func signCmd(args []string, out io.Writer) int {
+	signFlags := flag.NewFlagSet("sign", flag.ContinueOnError)
+	signFlags.SetOutput(out)
 	keyPtr := signFlags.String("key", "", "Security key (or set IMG_SECURITY_KEY env)")
 	pathPtr := signFlags.String("path", "", "URL path to sign (e.g., 300x200/test.jpg)")
 	baseURLPtr := signFlags.String("base", "", "Base URL (optional, e.g., http://localhost:8080)")
 	quietPtr := signFlags.Bool("quiet", false, "Output only the signed path")
 
-	if err := signFlags.Parse(os.Args[2:]); err != nil {
-		fmt.Println("Error parsing arguments:", err)
-		os.Exit(1)
+	if err := signFlags.Parse(args); err != nil {
+		return 1
 	}
 
 	// Get key
@@ -70,15 +76,15 @@ func signCmd() {
 		key = os.Getenv("IMG_SECURITY_KEY")
 	}
 	if key == "" {
-		fmt.Println("Error: Security key required (-key or IMG_SECURITY_KEY)")
-		os.Exit(1)
+		fmt.Fprintln(out, "Error: Security key required (-key or IMG_SECURITY_KEY)")
+		return 1
 	}
 
 	// Get path
 	path := *pathPtr
 	if path == "" {
-		fmt.Println("Error: URL path required (-path)")
-		os.Exit(1)
+		fmt.Fprintln(out, "Error: URL path required (-path)")
+		return 1
 	}
 
 	// Generate signature
@@ -87,26 +93,27 @@ func signCmd() {
 
 	// Output results
 	if *quietPtr {
-		fmt.Print(signedPath)
-		return
+		fmt.Fprint(out, signedPath)
+		return 0
 	}
 
-	fmt.Println("Original path:", path)
-	fmt.Println("Signed path:  ", signedPath)
+	fmt.Fprintln(out, "Original path:", path)
+	fmt.Fprintln(out, "Signed path:  ", signedPath)
 
 	if *baseURLPtr != "" {
-		fmt.Println("Full URL:     ", *baseURLPtr+signedPath)
+		fmt.Fprintln(out, "Full URL:     ", *baseURLPtr+signedPath)
 	}
+	return 0
 }
 
-func verifyCmd() {
-	verifyFlags := flag.NewFlagSet("verify", flag.ExitOnError)
+func verifyCmd(args []string, out io.Writer) int {
+	verifyFlags := flag.NewFlagSet("verify", flag.ContinueOnError)
+	verifyFlags.SetOutput(out)
 	keyPtr := verifyFlags.String("key", "", "Security key (or set IMG_SECURITY_KEY env)")
 	urlPtr := verifyFlags.String("url", "", "Full signed URL path to verify")
 
-	if err := verifyFlags.Parse(os.Args[2:]); err != nil {
-		fmt.Println("Error parsing arguments:", err)
-		os.Exit(1)
+	if err := verifyFlags.Parse(args); err != nil {
+		return 1
 	}
 
 	// Get key
@@ -115,32 +122,33 @@ func verifyCmd() {
 		key = os.Getenv("IMG_SECURITY_KEY")
 	}
 	if key == "" {
-		fmt.Println("Error: Security key required (-key or IMG_SECURITY_KEY)")
-		os.Exit(1)
+		fmt.Fprintln(out, "Error: Security key required (-key or IMG_SECURITY_KEY)")
+		return 1
 	}
 
 	// Get URL
 	url := *urlPtr
 	if url == "" {
-		fmt.Println("Error: URL required (-url)")
-		os.Exit(1)
+		fmt.Fprintln(out, "Error: URL required (-url)")
+		return 1
 	}
 
 	// Extract signature and path
 	signature, path, ok := security.ExtractSignatureAndPath(url)
 	if !ok {
-		fmt.Println("❌ Invalid URL format")
-		os.Exit(1)
+		fmt.Fprintln(out, "❌ Invalid URL format")
+		return 1
 	}
 
 	// Verify signature
 	signer := security.NewSigner(key)
 	if signer.Verify(signature, path) {
-		fmt.Println("✅ Signature valid")
-		fmt.Println("   Path:", path)
+		fmt.Fprintln(out, "✅ Signature valid")
+		fmt.Fprintln(out, "   Path:", path)
+		return 0
 	} else {
-		fmt.Println("❌ Signature invalid")
-		os.Exit(1)
+		fmt.Fprintln(out, "❌ Signature invalid")
+		return 1
 	}
 }
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,7 +48,7 @@ func LoggingMiddleware() gin.HandlerFunc {
 				" | " + c.Request.Method +
 				" | " + c.Request.URL.Path +
 				" | " + latency.String() +
-				" | " + string(rune(c.Writer.Status())) +
+				" | " + strconv.Itoa(c.Writer.Status()) +
 				"\n",
 		))
 	}

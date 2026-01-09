@@ -3,7 +3,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25.5-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Build Status](https://github.com/vincent119/images-filters/actions/workflows/go.yml/badge.svg)](https://github.com/vincent119/images-filters/actions/workflows/go.yml)
-[![Coverage Status](https://coveralls.io/repos/github/vincent119/images-filters/badge.svg?branch=main)](https://coveralls.io/github/vincent119/images-filters?branch=main)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/vincent119/cca471fced090cd840f0d85a5e876305/raw/images-filters-coverage.json)](https://github.com/vincent119/images-filters)
 [![Go Report Card](https://goreportcard.com/badge/github.com/vincent119/images-filters)](https://goreportcard.com/report/github.com/vincent119/images-filters)
 
 [繁體中文](README_TW.md)
